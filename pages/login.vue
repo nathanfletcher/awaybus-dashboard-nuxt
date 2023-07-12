@@ -4,14 +4,15 @@
             <v-row no-gutters>
                 <v-col></v-col>
                 <v-col>
+                    <h1>Station Master</h1>
                     <v-sheet class="ma-2 pa-2">
                         <div>
-                            <h1>Sign in</h1>
+                            <h3>Sign in</h3>
                             <form @submit.prevent="login">
                                 <ErrorAlert :error-msg="authError" @clearError="clearError" />
 
                                 <v-text-field type="text" label="Email address" v-model="email"></v-text-field>
-                                <v-text-field class="cmCuLh" type="password" label="Password"
+                                <v-text-field type="password" label="Password"
                                     v-model="password"></v-text-field>
 
                                 <div>
@@ -22,12 +23,6 @@
                                     <NuxtLink to="/forgot-password" class="me-4">Forgot your password?</NuxtLink>
                                 </div>
                             </form>
-                            <div class="jGQTZC">
-                                <p class="dEDhcH">Don’t have a SupaAuth account?</p>
-                                <NuxtLink to="/register">
-                                    <v-btn class="me-4"> Create new account </v-btn>
-                                </NuxtLink>
-                            </div>
                         </div>
                     </v-sheet>
                 </v-col>
@@ -53,7 +48,7 @@
 
     watchEffect(async () => {
         if (user.value) {
-            await navigateTo("/");
+            //await navigateTo("/");
         }
     });
 
