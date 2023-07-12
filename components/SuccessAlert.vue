@@ -8,8 +8,8 @@
     </Transition>
   </template>
   
-  <script setup lang="ts">
-  defineProps<{ successMsg: String }>()
+  <script setup >
+  defineProps({ successMsg: String })
   const emit = defineEmits(['clearSuccess'])
   const clearSuccess = () => {
     emit('clearSuccess');
