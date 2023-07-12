@@ -34,7 +34,7 @@
 
 <script setup>
     definePageMeta({
-        layout: "auth",
+        
     });
     useHead({
         title: "Login | supaAuth",
@@ -48,7 +48,7 @@
 
     watchEffect(async () => {
         if (user.value) {
-            //await navigateTo("/");
+            await navigateTo("/");
         }
     });
 
