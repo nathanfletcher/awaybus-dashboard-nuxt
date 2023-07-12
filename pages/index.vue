@@ -2,12 +2,12 @@
     <div>
       <NuxtWelcome />
     </div>
-  </template>
-  <script setup>
+</template>
+<script setup>
   definePageMeta({
       middleware: 'auth',
   });
   useHead({
       title: "Login | supaAuth",
   });
-  </script>
+</script>

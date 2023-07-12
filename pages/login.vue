@@ -16,7 +16,7 @@
                                     v-model="password"></v-text-field>
 
                                 <div>
-                                    <v-btn type="submit" :disabled="loading">
+                                    <v-btn type="submit" :disabled="loading" >
                                         <div :class="{ loading: loading }">Sign in</div>
                                     </v-btn>
                                     <br />
@@ -45,19 +45,24 @@
     const email = ref("");
     const password = ref("");
     const client = useSupabaseAuthClient();
+    const router = useRouter();
 
     watchEffect(async () => {
         if (user.value) {
-            await navigateTo("/");
+            console.log("User is logged in");
+            console.log(user)
+            router.push("/");
         }
     });
 
     const login = async () => {
+        console.log("Logging in user");
         loading.value = true;
         const { error } = await client.auth.signInWithPassword({
             email: email.value,
             password: password.value,
         });
+        console.log("Login in user");
         if (error) {
             loading.value = false;
             authError.value = "Invalid login credentials";
