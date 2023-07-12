@@ -29,7 +29,7 @@
   
   <script setup >
   definePageMeta({
-    
+    layout: 'auth'
   })
   useHead({
     title: 'Forgot Password | supaAuth'

@@ -34,7 +34,7 @@
 
 <script setup>
     definePageMeta({
-        
+        layout: "auth",
     });
     useHead({
         title: "Login | supaAuth",

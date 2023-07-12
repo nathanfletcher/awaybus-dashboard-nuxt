@@ -29,7 +29,7 @@
 
       </v-navigation-drawer>
 
-      <v-main style="height: 500px;">
+      <v-main >
         <slot/>
       </v-main>
     </v-layout>
@@ -40,24 +40,7 @@
     data: () => ({
       drawer: false,
       group: null,
-      items: [
-        {
-          title: 'Foo',
-          value: 'foo',
-        },
-        {
-          title: 'Bar',
-          value: 'bar',
-        },
-        {
-          title: 'Fizz',
-          value: 'fizz',
-        },
-        {
-          title: 'Buzz',
-          value: 'buzz',
-        },
-      ],
+      
     }),
 
     watch: {
