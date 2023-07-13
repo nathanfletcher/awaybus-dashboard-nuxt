@@ -3,5 +3,5 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
   ssr: false,
-  modules: ['@nuxtjs/supabase','@invictus.codes/nuxt-vuetify'],
+  modules: ['@nuxtjs/supabase','@invictus.codes/nuxt-vuetify',],
 })

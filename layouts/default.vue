@@ -6,6 +6,7 @@
       <v-app-bar
         color="primary"
         prominent
+        absolute=""
       >
         <v-app-bar-nav-icon variant="text" @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
 
@@ -30,7 +31,9 @@
       </v-navigation-drawer>
 
       <v-main >
+        <v-container>
         <slot/>
+      </v-container>
       </v-main>
     </v-layout>
   </v-card>
