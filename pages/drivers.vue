@@ -1,7 +1,21 @@
 <template>
     <div>
         <h1>Getting all drivers</h1>
-        <DataTable :columns="tableHeaders" :data="drivers" :options="{select:true}">  </DataTable>
+        <DataTable :columns="tableHeaders" 
+        :data="drivers" 
+        :options="{
+            select:true
+
+            }"
+        >  
+        <thead>
+            <tr>
+                <th v-for="column in tableHeaders" :key="column.data">
+                    {{ column.data }}
+                </th>
+            </tr>
+        </thead>
+        </DataTable>
     </div>
 </template>
 <script setup>
@@ -11,9 +25,9 @@
     import Select from 'datatables.net-select';
 
     DataTable.use(DataTablesCore);
+    DataTable.use(Select);
 
     import { useDate } from 'vuetify/labs/date'
-    import { VDataTable, VDataTableServer } from 'vuetify/labs/VDataTable'
     
     definePageMeta({
         middleware: 'auth'
@@ -132,3 +146,7 @@
 
     //const { data, error } = await client.from('awayBusDrivers').select().order('created_at')
 </script>
+
+<style>
+@import 'datatables.net-dt';
+</style>
