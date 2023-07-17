@@ -9,7 +9,7 @@
           :loading="loading"
           :item-value="drivers"
           :page="currentPage"
-          @update:options="getAllDrivers"
+          @update:options="getNextBatchOfDrivers"
         >
         <template v-slot:item.created_at>
             <p>{{  date.format('2023-01-04T23:05:06.299989+00:00', 'normalDateWithWeekday') }}</p>
@@ -49,9 +49,9 @@
                 Reset
                 </v-btn>
             </template> -->
-            <template v-slot:bottom>
+            <!-- <template v-slot:bottom>
                 <v-pagination v-model="itemsPerPage" @update:model-value="currentPage = parseInt($event, +10)"></v-pagination>
-            </template>
+            </template> -->
         </v-data-table-server>
 
 
@@ -100,11 +100,20 @@
         }
     });
 
+    async function getNextBatchOfDrivers({ page, itemsPerPage, sortBy }) {
+        console.log("current page",page)
+        console.log("items",itemsPerPage)
+        const { data } = await client.from('awayBusDrivers').select().range((page)*itemsPerPage,itemsPerPage.value).limit(itemsPerPage).order('created_at', { ascending: false })
+        drivers.value = data;
+        console.log(data)
+        //return data;
+    }
+
     async function getAllDrivers() {
         console.log('this is page', currentPage.value) 
         loading.value = true;
         let result =  await useAsyncData('awayBusDrivers', async () => {
-            const { data } = await client.from('awayBusDrivers').select().range(currentPage.value-1,(currentPage.value ) * itemsPerPage.value)//.range(currentPage.value, currentPage.value+itemsPerPage.value)//.limit(itemsPerPage.value).range((currentPage.value - 1) * itemsPerPage.value).order('created_at', { ascending: false })
+            const { data } = await client.from('awayBusDrivers').select().range(currentPage.value,(currentPage.value ) * itemsPerPage.value)//.range(currentPage.value, currentPage.value+itemsPerPage.value)//.limit(itemsPerPage.value).range((currentPage.value - 1) * itemsPerPage.value).order('created_at', { ascending: false })
             // console.log(data)
             drivers.value = data;
             return data;
@@ -159,8 +168,6 @@
                 key: key,
             }
         })
-        console.log("Table headers")
-        console.log(result)
         return result;
     }
 
