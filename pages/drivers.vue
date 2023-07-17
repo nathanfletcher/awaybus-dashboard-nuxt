@@ -1,66 +1,20 @@
 <template>
     <div>
         <h1>Getting all drivers</h1>
-        <v-data-table-server
-          :headers="tableHeaders"
-          :items="drivers"
-          :items-per-page="itemsPerPage"
-          :items-length="totalItems"
-          :loading="loading"
-          :item-value="drivers"
-          :page="currentPage"
-          @update:options="getNextBatchOfDrivers"
-        >
-        <template v-slot:item.created_at>
-            <p>{{  date.format('2023-01-04T23:05:06.299989+00:00', 'normalDateWithWeekday') }}</p>
-        </template>
-        <template v-slot:item.lastActive>
-            <p>{{ date.format('2023-01-04T23:05:06.299989+00:00', 'normalDateWithWeekday') }}</p>
-        </template>
-            <!--<template v-slot:item.isVerified="{ item }">
-                <v-chip
-                :color="item.isVerified ? 'green' : 'red'"
-                dark
-                small
-                >
-                {{ item.isVerified ? 'Verified' : 'Not Verified' }}
-                </v-chip>
-            </template>
-            <template v-slot:item.actions="{ item }">
-                <v-icon
-                small
-                class="mr-2"
-                @click="editItem(item)"
-                >
-                mdi-pencil
-                </v-icon>
-                <v-icon
-                small
-                @click="deleteItem(item)"
-                >
-                mdi-delete
-                </v-icon>
-            </template>
-             <template v-slot:no-data>
-                <v-btn
-                color="primary"
-                @click="initialize"
-                >
-                Reset
-                </v-btn>
-            </template> -->
-            <!-- <template v-slot:bottom>
-                <v-pagination v-model="itemsPerPage" @update:model-value="currentPage = parseInt($event, +10)"></v-pagination>
-            </template> -->
-        </v-data-table-server>
-
-
+        <DataTable :columns="tableHeaders" :data="drivers" :options="{select:true}">  </DataTable>
     </div>
 </template>
 <script setup>
-    import { onMounted } from 'vue';
+    import DataTable from 'datatables.net-vue3';
+    
+    import DataTablesCore from 'datatables.net';
+    import Select from 'datatables.net-select';
+
+    DataTable.use(DataTablesCore);
+
     import { useDate } from 'vuetify/labs/date'
     import { VDataTable, VDataTableServer } from 'vuetify/labs/VDataTable'
+    
     definePageMeta({
         middleware: 'auth'
     })
@@ -71,21 +25,28 @@
     //const itemsPerPage = ref(5)
     const currentPage = ref(1)
     //const totalItems = ref(0)
-    const drivers = ref([])
+   //const drivers = ref([])
     const loading = ref(false)
+
+    
     
     // const { data:drivers, error } = await useAsyncData('drivers', async () => {
     //     return await client.from('awayBusDrivers').select().order('created_at')
     // })
 
     // get all drivers using useAsyncData
-    /* const {data:drivers, pending, error} =  await useAsyncData('awayBusDrivers', async () => {
+    const {data:drivers} =  await useAsyncData('awayBusDrivers', async () => {
         const { data } = await client.from('awayBusDrivers').select().order('created_at')
-        console.log(data)
+        //console.log(data)
         return data;
-    }) */
-    //drivers.value = await client.from('awayBusDrivers').select().order('created_at').data;
+    })
+    //let drivers = await client.from('awayBusDrivers').select().order('created_at').data;
 
+    //drivers.value = getNextBatchOfDrivers({ page: currentPage.value, itemsPerPage: 5, sortBy: 'id' })
+    console.log('this is the drivers',drivers.value)
+    tableHeaders.value = getTableHeaders(drivers.value);
+
+    console.log('this is the table headers',tableHeaders.value)
     // get count of all drivers using useAsyncData
     const {data:totalItems, pending, error} =  await useAsyncData('awayBusDriversCount', async () => {
         const { data, count,error } = await client.from('awayBusDrivers').select('*',{count:'exact'})
@@ -94,11 +55,11 @@
     })
     
 
-    watchEffect(async () => {
+    /* watchEffect(async () => {
         if (drivers.value) {
             tableHeaders.value = getTableHeaders(drivers.value);
         }
-    });
+    }); */
 
     async function getNextBatchOfDrivers({ page, itemsPerPage, sortBy }) {
         console.log("current page",page)
@@ -162,10 +123,7 @@
         
         let result =  getTableHeadersArray(json).map((key) => {
             return {
-                title: key,
-                align: 'start',
-                sortable: true,
-                key: key,
+                data:key
             }
         })
         return result;
