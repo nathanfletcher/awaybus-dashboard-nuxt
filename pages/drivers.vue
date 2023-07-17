@@ -68,7 +68,7 @@
     const tableHeaders = ref([])
     const client = useSupabaseClient()
     const user = useSupabaseUser()
-    const itemsPerPage = ref(5)
+    //const itemsPerPage = ref(5)
     const currentPage = ref(1)
     //const totalItems = ref(0)
     const drivers = ref([])
@@ -103,7 +103,7 @@
     async function getNextBatchOfDrivers({ page, itemsPerPage, sortBy }) {
         console.log("current page",page)
         console.log("items",itemsPerPage)
-        const { data } = await client.from('awayBusDrivers').select().range((page)*itemsPerPage,itemsPerPage.value).limit(itemsPerPage).order('created_at', { ascending: false })
+        const { data } = await client.from('awayBusDrivers').select().range((page-1)*itemsPerPage,itemsPerPage.value).limit(itemsPerPage).order('id', { ascending: true })
         drivers.value = data;
         console.log(data)
         //return data;
