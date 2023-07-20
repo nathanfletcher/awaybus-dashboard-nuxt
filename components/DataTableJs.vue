@@ -1,11 +1,14 @@
 <template>
-    <div>
+    <div id="supabaseTable">
         
         <DataTable :columns="tableHeaders" 
         :data="data" 
         :options="{
-            select:true
-
+            select:true,
+            nowrap: true,
+            scrollX: true,
+            scrollCollapse: true,
+            scrollY: 'calc(100vh - 300px)',
             }"
         >  
             <thead>
@@ -172,4 +175,5 @@
 
 <style>
 @import 'datatables.net-dt';
+
 </style>
