@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1>Getting all drivers</h1>
+        <h1>Getting all Bus Stops</h1>
         <DataTableJs
         :supabase-table=table
         >
@@ -10,5 +10,5 @@
 </template>
 
 <script setup>
-    const table = 'awayBusDrivers'
+    const table = 'awayBusStops'
 </script>

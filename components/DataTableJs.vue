@@ -8,13 +8,13 @@
 
             }"
         >  
-        <thead>
-            <tr>
-                <th v-for="column in tableHeaders" :key="column.data">
-                    {{ column.data }}
-                </th>
-            </tr>
-        </thead>
+            <thead>
+                <tr>
+                    <th v-for="column in tableHeaders" :key="column.data">
+                        {{ column.data }}
+                    </th>
+                </tr>
+            </thead>
         </DataTable>
     </div>
 </template>
@@ -30,20 +30,24 @@
 
     import { useDate } from 'vuetify/labs/date'
 
-    defineProps({
+    const props = defineProps({
         data: {
             type: Array,
             required: true
         },
         tableHeaders: {
             type: Array,
-            required: true
+            required: false
         },
         supabaseColumns: {
             type: String,
             required: false,
             default: '*'
         },
+        supabaseTable: {
+            type: String,
+            required: true,
+        }
     })
     
     definePageMeta({
@@ -58,7 +62,7 @@
     //const totalItems = ref(0)
    //const drivers = ref([])
     const loading = ref(false)
-    const queryColumns = this.supabaseColumns
+    const queryColumns = props.supabaseColumns
 
     
     
@@ -68,7 +72,7 @@
 
     // get all data using useAsyncData
     const {data} =  await useAsyncData('awayBusDrivers', async () => {
-        const { data } = await client.from('awayBusDrivers').select(String(supabaseColumns)).order('created_at')
+        const { data } = await client.from(props.supabaseTable).select(queryColumns)
         //console.log(data)
         return data;
     })
@@ -155,7 +159,8 @@
         
         let result =  getTableHeadersArray(json).map((key) => {
             return {
-                data:key
+                data:key,
+                defaultContent: "Not set"
             }
         })
         return result;
