@@ -39,6 +39,10 @@
           title: 'Users',
           value: 'users',
         },
+        {
+          title: 'Logout',
+          value: 'logout',
+        }
         
       ],
     }),
