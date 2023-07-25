@@ -1,14 +1,21 @@
 <template>
     <div id="supabaseTable">
-        
+        <div class="controlPanel"></div>
         <DataTable :columns="tableHeaders" 
         :data="data" 
+        ref="table"
+        @select="selectCallback"
         :options="{
-            select:true,
+            select:{ items: 'row', style:'multiple' },
             nowrap: true,
             scrollX: true,
             scrollCollapse: true,
             scrollY: 'calc(100vh - 300px)',
+            dom: 'Bftip',
+            buttons: [
+                { text: 'test', action: action },
+               
+                ]
             }"
         >  
             <thead>
@@ -23,15 +30,20 @@
 </template>
 <script setup>
     import { defineProps, defineEmits } from 'vue';
-    import DataTable from 'datatables.net-vue3';
-    
     import DataTablesCore from 'datatables.net';
+    import DataTable from 'datatables.net-vue3';
     import Select from 'datatables.net-select';
+    import Editor from 'datatables.net-editor';
+    import Buttons from 'datatables.net-buttons';   
+    import 'datatables.net-buttons/js/buttons.html5'; 
 
     DataTable.use(DataTablesCore);
     DataTable.use(Select);
+    DataTable.use(Editor);
+    DataTable.use(Buttons);
 
     import { useDate } from 'vuetify/labs/date'
+
 
     const props = defineProps({
         data: {
@@ -67,8 +79,18 @@
     const loading = ref(false)
     const queryColumns = props.supabaseColumns
 
+    let dt;
+    const table = ref()
+    //const dataTable = this.$refs.table.dt; // This variable is used in the `ref` attribute for the component
     
-    
+    onMounted(function () {
+        dt = table.value.dt;
+        /* this.$refs.table.dt()
+        .on( 'select', function ( e, dt, type, indexes ) {
+            var rowData = dt.rows( indexes ).data().toArray();
+            console.log(rowData);
+        } ) */
+    }); 
     // const { data:drivers, error } = await useAsyncData('drivers', async () => {
     //     return await client.from('awayBusDrivers').select().order('created_at')
     // })
@@ -171,9 +193,31 @@
 
 
     //const { data, error } = await client.from('awayBusDrivers').select().order('created_at')
+
+    function action() {
+        
+      //alert(12);
+      //console.log(table.value.rows().data())
+      console.log(dt)
+      console.log(dt.rows({ selected: true }).data()); 
+      dt.rows({ selected: true }).every(function () {
+            let idx = data.value.indexOf(this.data());
+            data.value.splice(idx, 1);
+        });
+      /* this.editor
+        .title('Add new record')
+        .buttons('Save')
+        .create(); */
+    }
+    function selectCallback(data, type, selected) {
+        //console.log(type)
+        console.log(dt.rows({ selected: true }).data()); 
+        //console.log(dataTable.row('.selected').data())
+      }
 </script>
 
 <style>
 @import 'datatables.net-dt';
-
+@import 'datatables.net-buttons-dt';
+@import 'datatables.net-select-dt';
 </style>

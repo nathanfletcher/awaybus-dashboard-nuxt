@@ -11,7 +11,7 @@
 
 <script setup>
     definePageMeta({
-        middleware: 'auth',
+        /* middleware: 'auth', */
     });
     const table = 'awayBusDrivers'
 </script>
