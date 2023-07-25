@@ -5,6 +5,7 @@
         :data="data" 
         ref="table"
         @select="selectCallback"
+        @deselect="selectCallback"
         :options="{
             select:{ items: 'row', style:'multiple' },
             nowrap: true,
@@ -14,7 +15,9 @@
             dom: 'Bftip',
             buttons: [
                 { text: 'test', action: action },
-               
+                { text: 'create', action: createSupabaseRow },
+                { text: 'edit', action:  editSupabaseRows},
+                { text: 'delete', action: deleteSupabaseRows },
                 ]
             }"
         >  
@@ -38,7 +41,7 @@
     import 'datatables.net-buttons/js/buttons.html5'; 
 
     DataTable.use(DataTablesCore);
-    DataTable.use(Select);
+    // DataTable.use(Select);
     DataTable.use(Editor);
     DataTable.use(Buttons);
 
@@ -62,6 +65,11 @@
         supabaseTable: {
             type: String,
             required: true,
+        },
+        supabaseTableId: {
+            type: String,
+            required: true,
+            default: 'id'
         }
     })
     
@@ -78,13 +86,19 @@
    //const drivers = ref([])
     const loading = ref(false)
     const queryColumns = props.supabaseColumns
+    let selectedRows = ref([])
 
     let dt;
+    let editor;
     const table = ref()
+    let buttons = ref()
     //const dataTable = this.$refs.table.dt; // This variable is used in the `ref` attribute for the component
     
     onMounted(function () {
         dt = table.value.dt;
+        buttons = dt.buttons( ['.edit', '.delete'] );
+        //dt.buttons().disable();
+        selectCallback()
         /* this.$refs.table.dt()
         .on( 'select', function ( e, dt, type, indexes ) {
             var rowData = dt.rows( indexes ).data().toArray();
@@ -117,8 +131,11 @@
     
 
     /* watchEffect(async () => {
-        if (drivers.value) {
-            tableHeaders.value = getTableHeaders(drivers.value);
+        if ( table.rows( { selected: true } ).indexes().length === 0 ) {
+            buttons.disable();
+        }
+        else {
+            buttons.enable();
         }
     }); */
 
@@ -211,9 +228,57 @@
     }
     function selectCallback(data, type, selected) {
         //console.log(type)
-        console.log(dt.rows({ selected: true }).data()); 
-        //console.log(dataTable.row('.selected').data())
-      }
+        console.log(); 
+        //console.log(dataTable.row('.selected').data())//
+        selectedRows = dt.rows({ selected: true }).data().toArray();
+        
+        //dt.buttons().disable();
+        console.log(selectedRows)
+ 
+        if ( selectedRows.length > 0 ) {
+            dt.buttons().enable();
+            console.log(selectedRows[0].created_at)
+        }
+        else {
+            dt.buttons().disable();
+        }
+
+    }
+    async function createSupabaseRow(){
+
+        const { data, error } = await supabase
+        .from(props.supabaseTable)
+        .insert([
+            { some_column: 'someValue', other_column: 'otherValue' },
+        ])
+        .select()
+
+    }
+
+    async function editSupabaseRows(selectedRows){
+        //let selectedRows = dt.rows({ selected: true }).data().toArray();
+        const { data, error } = await supabase
+        .from(props.supabaseTable)
+        .upsert(selectedRows)
+        .select()
+        return data;
+    }
+    async function deleteSupabaseRows(selectedRows){
+        if (!selectedRows.length === 0 && hasId(selectedRows[0])) {
+            const { error } = await supabase
+            .from(props.supabaseTable)
+            .delete()
+            .eq(props.supabaseTableId, selectedRows[0][props.supabaseTableId])
+            return;
+        }
+        
+
+    }
+
+    // return true if json keys contain 'id'
+    function hasId(json) {
+        return Object.keys(json).includes('id');
+    }
 </script>
 
 <style>
