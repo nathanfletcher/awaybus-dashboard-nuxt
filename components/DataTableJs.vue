@@ -1,6 +1,85 @@
 <template>
     <div id="supabaseTable">
-        <div class="controlPanel"></div>
+        <div class="controlPanel">
+            <v-row>
+                <v-col cols="auto">
+                    <v-dialog transition="dialog-top-transition" width="auto">
+                        <template v-slot:activator="{ props }">
+                        <v-btn color="primary" v-bind="props">Create</v-btn>
+                        </template>
+                        <template v-slot:default="{ isActive }">
+                        <v-card>
+                            <v-toolbar
+                            color="primary"
+                            title="Create"
+                            ></v-toolbar>
+                            <v-card-text>
+                            <div class="text-h2 pa-12">Hello world!</div>
+                            </v-card-text>
+                            <v-card-actions class="justify-end">
+                            <v-btn variant="text" @click="isActive.value = false"
+                                >Close</v-btn
+                            >
+                            </v-card-actions>
+                        </v-card>
+                        </template>
+                    </v-dialog>
+                </v-col>
+
+                <v-col cols="auto">
+                    <v-dialog transition="dialog-top-transition" width="auto">
+                        <template v-slot:activator="{ props }">
+                        <v-btn color="primary" v-bind="props" >Edit</v-btn>
+                        </template>
+                        <template v-slot:default="{ isActive }">
+                        <v-card>
+                            <v-toolbar color="primary" title="Opening from the top"></v-toolbar>
+                            <v-card-text>
+                            <div class="text-h2 pa-12">Hello world!</div>
+                            <div>
+                                // for every object in tableObject key create a div with the object's name and a v-text-field with the object's value
+                                <template v-for="jsonKey in Object.keys(tableObject)" :key="jsonKey">
+                                    
+                                    <!-- <v-text-field v-model="tableObject[jsonKey]"></v-text-field> -->
+                                    <v-text-field
+                                    v-model="tableObject[jsonKey]"
+                                    :label="jsonKey"
+                                    ></v-text-field>
+                                </template> 
+                            </div>
+                            </v-card-text>
+                            <v-card-actions class="justify-end">
+                            <v-btn variant="text" @click="isActive.value = false"
+                                >Close</v-btn
+                            >
+                            </v-card-actions>
+                        </v-card>
+                        </template>
+                    </v-dialog>
+                </v-col>
+
+                <v-col cols="auto">
+                    <v-dialog transition="dialog-top-transition" width="auto">
+                        <template v-slot:activator="{ props }">
+                        <v-btn color="primary" v-bind="props">Delete</v-btn>
+                        </template>
+                        <template v-slot:default="{ isActive }">
+                        <v-card>
+                            <v-toolbar color="primary" title="Opening from the top"></v-toolbar>
+                            <v-card-text>
+                            <div class="text-h2 pa-12">Hello world!</div>
+                            </v-card-text>
+                            <v-card-actions class="justify-end">
+                            <v-btn variant="text" @click="isActive.value = false"
+                                >Close</v-btn
+                            >
+                            </v-card-actions>
+                        </v-card>
+                        </template>
+                    </v-dialog>
+                </v-col>
+            </v-row>
+        </div>
         <DataTable :columns="tableHeaders" 
         :data="data" 
         ref="table"
@@ -32,7 +111,8 @@
     </div>
 </template>
 <script setup>
-    import { defineProps, defineEmits } from 'vue';
+    import { defineProps} from 'vue';
+   
     import DataTablesCore from 'datatables.net';
     import DataTable from 'datatables.net-vue3';
     import Select from 'datatables.net-select';
@@ -87,6 +167,7 @@
     const loading = ref(false)
     const queryColumns = props.supabaseColumns
     let selectedRows = ref([])
+    let tableObject = ref({});
 
     let dt;
     let editor;
@@ -108,20 +189,34 @@
     // const { data:drivers, error } = await useAsyncData('drivers', async () => {
     //     return await client.from('awayBusDrivers').select().order('created_at')
     // })
-
+    
     // get all data using useAsyncData
-    const {data} =  await useAsyncData('awayBusDrivers', async () => {
+    let {data} =  await useAsyncData('awayBusDrivers', async () => {
         const { data } = await client.from(props.supabaseTable).select(queryColumns)
         //console.log(data)
         return data;
     })
+    // generate modal form if data has content
+    const generateModalForm = (action) => {
+        console.log('this is the action',action)
+        console.log('this is the data first value',toRaw(data.value[0]))
+        if(data.value.length > 0){
+            return getForm(toRaw(data.value[0]),action)
+        }
+        else{
+            return '<h1>no data</h1>'
+        }
+    }
+    
+    let editAction = '<h1>no data</h1>'
+    editAction = generateModalForm(editSupabaseRows)
+
     //let drivers = await client.from('awayBusDrivers').select().order('created_at').data;
 
     //drivers.value = getNextBatchOfDrivers({ page: currentPage.value, itemsPerPage: 5, sortBy: 'id' })
-    console.log('this is the drivers',data.value)
-    tableHeaders.value = getTableHeaders(data.value);
+    //Get Table Headers from first row of data
+    tableHeaders.value = getTableHeaders(toRaw(data.value[0]));
 
-    console.log('this is the table headers',tableHeaders.value)
     // get count of all drivers using useAsyncData
     const {data:totalItems, pending, error} =  await useAsyncData('awayBusDriversCount', async () => {
         const { data, count,error } = await client.from('awayBusDrivers').select('*',{count:'exact'})
@@ -183,12 +278,13 @@
         }
     }
 
-    function getTableHeadersArray(json) {
+    function getTableHeadersArray(jsonArray) {
+        
         // if json is empty return empty array
-        if (json.length === 0) {
+        if (jsonArray.length === 0) {
             return [];
         }
-        return Object.keys(json[0]);
+        return Object.keys(jsonArray);
     }
 
     //  map json keys to the format {
@@ -229,11 +325,12 @@
     function selectCallback(data, type, selected) {
         //console.log(type)
         console.log(); 
-        //console.log(dataTable.row('.selected').data())//
-        selectedRows = dt.rows({ selected: true }).data().toArray();
+        console.log(toRaw(dt.rows({ selected: true }).data().toArray()[0]))//
+        selectedRows.value = toRaw(dt.rows({ selected: true }).data().toArray());
+        tableObject.value = dt.rows({ selected: true }).data().toArray()[0];
         
         //dt.buttons().disable();
-        console.log(selectedRows)
+        //console.log(selectedRows)
  
         if ( selectedRows.length > 0 ) {
             dt.buttons().enable();
@@ -255,15 +352,16 @@
 
     }
 
-    async function editSupabaseRows(selectedRows){
+    async function editSupabaseRows(){
+        console.log(selectedRows)
         //let selectedRows = dt.rows({ selected: true }).data().toArray();
-        const { data, error } = await supabase
+        /* const { data, error } = await supabase
         .from(props.supabaseTable)
         .upsert(selectedRows)
         .select()
-        return data;
+        return data; */
     }
-    async function deleteSupabaseRows(selectedRows){
+    async function deleteSupabaseRows(){
         if (!selectedRows.length === 0 && hasId(selectedRows[0])) {
             const { error } = await supabase
             .from(props.supabaseTable)
@@ -278,6 +376,37 @@
     // return true if json keys contain 'id'
     function hasId(json) {
         return Object.keys(json).includes('id');
+    }
+
+    // retrun html form from json
+    function getForm(json, action) {
+        tableObject.value = json;
+        
+        let formInputs =  getTableHeadersArray(json).map((key) => {
+            return `
+                            <v-text-field
+                                    v-model="${tableObject[key]}"
+                                    label="${tableObject[key]}"
+                                    ></v-text-field>`
+        })
+        let formStructure = `<div>
+                                <form @submit.prevent="${action}">
+                                    ${formInputs}
+
+                                    <v-btn
+                                    class="me-4"
+                                    type="submit"
+                                    >
+                                    submit
+                                    </v-btn>
+
+                                    <v-btn @click="handleReset">
+                                    clear
+                                    </v-btn>
+                                </form>
+                            </div>`
+        
+        return formStructure;
     }
 </script>
 
