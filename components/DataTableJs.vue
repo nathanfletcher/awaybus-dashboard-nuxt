@@ -3,41 +3,17 @@
         <div class="controlPanel">
             <v-row>
                 <v-col cols="auto">
-                    <v-dialog transition="dialog-top-transition" width="auto">
+                    <v-dialog width="auto">
                         <template v-slot:activator="{ props }">
-                        <v-btn color="primary" v-bind="props">Create</v-btn>
-                        </template>
-                        <template v-slot:default="{ isActive }">
-                        <v-card>
-                            <v-toolbar
-                            color="primary"
-                            title="Create"
-                            ></v-toolbar>
-                            <v-card-text>
-                            <div class="text-h2 pa-12">Hello world!</div>
-                            </v-card-text>
-                            <v-card-actions class="justify-end">
-                            <v-btn variant="text" @click="isActive.value = false"
-                                >Close</v-btn
-                            >
-                            </v-card-actions>
-                        </v-card>
-                        </template>
-                    </v-dialog>
-                </v-col>
-
-                <v-col cols="auto">
-                    <v-dialog transition="dialog-top-transition" width="auto">
-                        <template v-slot:activator="{ props }">
-                        <v-btn color="primary" v-bind="props" >Edit</v-btn>
+                        <v-btn color="primary" v-bind="props">Add</v-btn>
                         </template>
                         <template v-slot:default="{ isActive }">
                         <v-card width="400">
-                            <v-toolbar color="primary" title="Editing"></v-toolbar>
+                            <v-toolbar color="primary" title="Add"></v-toolbar>
                             <v-card-text>
-                                <template v-for="jsonKey in Object.keys(tableObject)" :key="jsonKey">
+                                <template v-for="jsonKey in Object.keys(clearObject(data[0]))" :key="jsonKey">
                                     <v-text-field
-                                    v-model="tableObject[jsonKey]"
+                                    v-model="data[0][jsonKey]"
                                     :label="jsonKey"
                                     ></v-text-field>
                                 </template> 
@@ -53,19 +29,61 @@
                 </v-col>
 
                 <v-col cols="auto">
+                    <v-dialog width="auto">
+                        <template v-slot:activator="{ props }">
+                        <v-btn color="primary" v-bind="props" :disabled="!tableObject">Edit</v-btn>
+                        </template>
+                        <template v-slot:default="{ isActive }">
+                        <v-card width="400">
+                            <v-toolbar color="primary" title="Editing"></v-toolbar>
+                            <v-card-text>
+                                <template v-for="jsonKey in Object.keys(tableObject)" :key="jsonKey">
+                                    <v-text-field
+                                    v-model="tableObject[jsonKey]"
+                                    :label="jsonKey"
+                                    ></v-text-field>
+                                </template> 
+                            </v-card-text>
+                                <v-card-actions class="justify-end">
+                                    <v-btn color="primary" variant="tonal" @click="isActive.value = false"
+                                        >Save</v-btn
+                                    >
+                                    <v-btn variant="text" @click="isActive.value = false"
+                                        >Close</v-btn
+                                    >
+                            </v-card-actions>
+                        </v-card>
+                        </template>
+                    </v-dialog>
+                </v-col>
+
+                <v-col cols="auto">
                     <v-dialog transition="dialog-top-transition" width="auto">
                         <template v-slot:activator="{ props }">
-                        <v-btn color="primary" v-bind="props">Delete</v-btn>
+                        <v-btn color="warning" v-bind="props" :disabled="!selectedRows.length>0">Delete</v-btn>
                         </template>
                         <template v-slot:default="{ isActive }">
                         <v-card>
-                            <v-toolbar color="primary" title="Opening from the top"></v-toolbar>
+                            <v-toolbar color="warning" title="Opening from the top"></v-toolbar>
                             <v-card-text>
-                            <div class="text-h2 pa-12">Hello world!</div>
+                            <div class="text-h4 pa-12">Are you sure you want to delete these {{ selectedRows.length }} items?</div>
+                                <DataTable :columns="localTableHeaders"
+                                    :data="selectedRows" >
+                                    <thead>
+                                        <tr>
+                                            <th v-for="column in localTableHeaders" :key="column.data">
+                                                {{ column.data }}
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                </DataTable>
                             </v-card-text>
                             <v-card-actions class="justify-end">
-                            <v-btn variant="text" @click="isActive.value = false"
-                                >Close</v-btn
+                            <v-btn color="danger" variant="tonal" @click="isActive.value = flase"
+                                >Yes Delete</v-btn
+                            >
+                            <v-btn color="primary" variant="tonal" @click="isActive.value = false"
+                                >No Close</v-btn
                             >
                             </v-card-actions>
                         </v-card>
@@ -74,7 +92,7 @@
                 </v-col>
             </v-row>
         </div>
-        <DataTable :columns="tableHeaders" 
+        <DataTable :columns="localTableHeaders" 
         :data="data" 
         ref="table"
         @select="selectCallback"
@@ -87,16 +105,13 @@
             scrollY: 'calc(100vh - 300px)',
             dom: 'Bftip',
             buttons: [
-                { text: 'test', action: action },
-                { text: 'create', action: createSupabaseRow },
-                { text: 'edit', action:  editSupabaseRows},
-                { text: 'delete', action: deleteSupabaseRows },
+                'copy', 'excel', 'pdf',
                 ]
             }"
         >  
             <thead>
                 <tr>
-                    <th v-for="column in tableHeaders" :key="column.data">
+                    <th v-for="column in localTableHeaders" :key="column.data">
                         {{ column.data }}
                     </th>
                 </tr>
@@ -151,7 +166,7 @@
         middleware: 'auth'
     })
     const date = useDate()
-    const tableHeaders = ref([])
+    const localTableHeaders = ref()
     const client = useSupabaseClient()
     const user = useSupabaseUser()
     //const itemsPerPage = ref(5)
@@ -209,7 +224,13 @@
 
     //drivers.value = getNextBatchOfDrivers({ page: currentPage.value, itemsPerPage: 5, sortBy: 'id' })
     //Get Table Headers from first row of data
-    tableHeaders.value = getTableHeaders(toRaw(data.value[0]));
+    if(props.tableHeaders != undefined){
+        localTableHeaders.value = props.tableHeaders
+    }
+    else{
+        localTableHeaders.value = getTableHeaders(toRaw(data.value[0]));
+    }
+    //tableHeaders.value = getTableHeaders(toRaw(data.value[0]));
 
     // get count of all drivers using useAsyncData
     const {data:totalItems, pending, error} =  await useAsyncData('awayBusDriversCount', async () => {
@@ -269,6 +290,15 @@
         else {
             console.log(data[0])
             return data;
+        }
+    }
+
+    // remove all values from json object
+    function clearObject(obj) {
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                delete obj[key];
+            }
         }
     }
 
