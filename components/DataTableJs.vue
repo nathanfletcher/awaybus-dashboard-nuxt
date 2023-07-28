@@ -5,24 +5,27 @@
                 <v-col cols="auto">
                     <v-dialog width="auto">
                         <template v-slot:activator="{ props }">
-                        <v-btn color="primary" v-bind="props">Add</v-btn>
+                        <v-btn color="primary" v-bind="props">Add {{ props.tableName }}</v-btn>
                         </template>
                         <template v-slot:default="{ isActive }">
                         <v-card width="400">
                             <v-toolbar color="primary" title="Add"></v-toolbar>
                             <v-card-text>
-                                <template v-for="jsonKey in Object.keys(clearObject(data[0]))" :key="jsonKey">
+                                <template v-for="jsonKey in Object.keys(tableObjectTemplate)" :key="jsonKey">
                                     <v-text-field
-                                    v-model="data[0][jsonKey]"
+                                    v-model="tableObjectTemplate[jsonKey]"
                                     :label="jsonKey"
                                     ></v-text-field>
                                 </template> 
                             </v-card-text>
                                 <v-card-actions class="justify-end">
-                            <v-btn variant="text" @click="isActive.value = false"
-                                >Close</v-btn
-                            >
-                            </v-card-actions>
+                                    <v-btn color="primary" variant="tonal" @click="isActive.value = false"
+                                        >Save</v-btn
+                                    >
+                                    <v-btn variant="text" @click="isActive.value = false"
+                                        >Close</v-btn
+                                    >
+                                </v-card-actions>
                         </v-card>
                         </template>
                     </v-dialog>
@@ -31,7 +34,7 @@
                 <v-col cols="auto">
                     <v-dialog width="auto">
                         <template v-slot:activator="{ props }">
-                        <v-btn color="primary" v-bind="props" :disabled="!tableObject">Edit</v-btn>
+                        <v-btn color="primary" v-bind="props" :disabled="!selectedRows[0]">Edit</v-btn>
                         </template>
                         <template v-slot:default="{ isActive }">
                         <v-card width="400">
@@ -64,7 +67,7 @@
                         </template>
                         <template v-slot:default="{ isActive }">
                         <v-card>
-                            <v-toolbar color="warning" title="Opening from the top"></v-toolbar>
+                            <v-toolbar color="warning" title="Delete"></v-toolbar>
                             <v-card-text>
                             <div class="text-h4 pa-12">Are you sure you want to delete these {{ selectedRows.length }} items?</div>
                                 <DataTable :columns="localTableHeaders"
@@ -120,8 +123,6 @@
     </div>
 </template>
 <script setup>
-    import { defineProps} from 'vue';
-   
     import DataTablesCore from 'datatables.net';
     import DataTable from 'datatables.net-vue3';
     import Select from 'datatables.net-select';
@@ -140,7 +141,7 @@
     const props = defineProps({
         data: {
             type: Array,
-            required: true
+            required: false
         },
         tableHeaders: {
             type: Array,
@@ -151,20 +152,17 @@
             required: false,
             default: '*'
         },
-        supabaseTable: {
+        supabaseTableName: {
             type: String,
             required: true,
         },
         supabaseTableId: {
             type: String,
-            required: true,
+            required: false,
             default: 'id'
         }
     })
     
-    definePageMeta({
-        middleware: 'auth'
-    })
     const date = useDate()
     const localTableHeaders = ref()
     const client = useSupabaseClient()
@@ -176,7 +174,8 @@
     const loading = ref(false)
     const queryColumns = props.supabaseColumns
     let selectedRows = ref([])
-    let tableObject = ref({});
+    let tableObject;
+    let tableObjectTemplate={};
 
     let dt;
     let editor;
@@ -194,6 +193,7 @@
             var rowData = dt.rows( indexes ).data().toArray();
             console.log(rowData);
         } ) */
+        
     }); 
     // const { data:drivers, error } = await useAsyncData('drivers', async () => {
     //     return await client.from('awayBusDrivers').select().order('created_at')
@@ -201,10 +201,12 @@
     
     // get all data using useAsyncData
     let {data} =  await useAsyncData('awayBusDrivers', async () => {
-        const { data } = await client.from(props.supabaseTable).select(queryColumns)
-        //console.log(data)
+        const { data } = await client.from(props.supabaseTableName).select(queryColumns)
+        
+        tableObjectTemplate =  clearObject(data[0])
         return data;
     })
+    //tableObjectTemplate = clearObject(toRaw(data.value[0]))
     // generate modal form if data has content
     const generateModalForm = (action) => {
         console.log('this is the action',action)
@@ -217,9 +219,6 @@
         }
     }
     
-    let editAction = '<h1>no data</h1>'
-    editAction = generateModalForm(editSupabaseRows)
-
     //let drivers = await client.from('awayBusDrivers').select().order('created_at').data;
 
     //drivers.value = getNextBatchOfDrivers({ page: currentPage.value, itemsPerPage: 5, sortBy: 'id' })
@@ -239,15 +238,6 @@
         return count;
     })
     
-
-    /* watchEffect(async () => {
-        if ( table.rows( { selected: true } ).indexes().length === 0 ) {
-            buttons.disable();
-        }
-        else {
-            buttons.enable();
-        }
-    }); */
 
     async function getNextBatchOfDrivers({ page, itemsPerPage, sortBy }) {
         console.log("current page",page)
@@ -297,9 +287,11 @@
     function clearObject(obj) {
         for (var key in obj) {
             if (obj.hasOwnProperty(key)) {
-                delete obj[key];
+                //delete obj[key];
+                obj[key] = '';
             }
         }
+        return obj;
     }
 
     function getTableHeadersArray(jsonArray) {
@@ -351,7 +343,7 @@
         console.log(); 
         console.log(toRaw(dt.rows({ selected: true }).data().toArray()[0]))//
         selectedRows.value = toRaw(dt.rows({ selected: true }).data().toArray());
-        tableObject.value = dt.rows({ selected: true }).data().toArray()[0];
+        tableObject = toRaw(dt.rows({ selected: true }).data().toArray()[0]);
         
         //dt.buttons().disable();
         //console.log(selectedRows)
@@ -368,7 +360,7 @@
     async function createSupabaseRow(){
 
         const { data, error } = await supabase
-        .from(props.supabaseTable)
+        .from(props.supabaseTableName)
         .insert([
             { some_column: 'someValue', other_column: 'otherValue' },
         ])
@@ -380,7 +372,7 @@
         console.log(selectedRows)
         //let selectedRows = dt.rows({ selected: true }).data().toArray();
         /* const { data, error } = await supabase
-        .from(props.supabaseTable)
+        .from(props.supabaseTableName)
         .upsert(selectedRows)
         .select()
         return data; */
@@ -388,7 +380,7 @@
     async function deleteSupabaseRows(){
         if (!selectedRows.length === 0 && hasId(selectedRows[0])) {
             const { error } = await supabase
-            .from(props.supabaseTable)
+            .from(props.supabaseTableName)
             .delete()
             .eq(props.supabaseTableId, selectedRows[0][props.supabaseTableId])
             return;
@@ -402,36 +394,7 @@
         return Object.keys(json).includes('id');
     }
 
-    // retrun html form from json
-    function getForm(json, action) {
-        tableObject.value = json;
-        
-        let formInputs =  getTableHeadersArray(json).map((key) => {
-            return `
-                            <v-text-field
-                                    v-model="${tableObject[key]}"
-                                    label="${tableObject[key]}"
-                                    ></v-text-field>`
-        })
-        let formStructure = `<div>
-                                <form @submit.prevent="${action}">
-                                    ${formInputs}
-
-                                    <v-btn
-                                    class="me-4"
-                                    type="submit"
-                                    >
-                                    submit
-                                    </v-btn>
-
-                                    <v-btn @click="handleReset">
-                                    clear
-                                    </v-btn>
-                                </form>
-                            </div>`
-        
-        return formStructure;
-    }
+   
 </script>
 
 <style>

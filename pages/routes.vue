@@ -2,7 +2,7 @@
     <div>
         <h1>Getting all Bus Routes</h1>
         <DataTableJs
-        :supabase-table=table
+        :supabase-table-name=table
         >
 
         </DataTableJs>

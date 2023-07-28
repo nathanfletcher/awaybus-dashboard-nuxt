@@ -2,7 +2,7 @@
     <div>
         <h1>Getting all users</h1>
         <DataTableJs
-        :supabase-table=table
+        :supabase-table-name=table
         >
 
         </DataTableJs>
