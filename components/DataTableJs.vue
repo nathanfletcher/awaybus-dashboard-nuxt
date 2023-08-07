@@ -20,7 +20,7 @@
                             </v-card-text>
                                 <v-card-actions class="justify-end">
                                     <v-btn color="primary" variant="tonal" @click="isActive.value = false"
-                                        >Save</v-btn
+                                        >Create</v-btn
                                     >
                                     <v-btn variant="text" @click="isActive.value = false"
                                         >Close</v-btn
@@ -32,7 +32,7 @@
                 </v-col>
 
                 <v-col cols="auto">
-                    <v-dialog width="auto">
+                    <v-dialog width="auto" v-model=showEditDialog>
                         <template v-slot:activator="{ props }">
                         <v-btn color="primary" v-bind="props" :disabled="selectedRows.length!=1 ">Edit</v-btn>
                         </template>
@@ -48,7 +48,7 @@
                                 </template> 
                             </v-card-text>
                                 <v-card-actions class="justify-end">
-                                    <v-btn color="primary" variant="tonal" @click="isActive.value = false"
+                                    <v-btn color="primary" variant="tonal" @click="editSupabaseRow"
                                         >Save</v-btn
                                     >
                                     <v-btn variant="text" @click="isActive.value = false"
@@ -174,8 +174,9 @@
     const loading = ref(false)
     const queryColumns = props.supabaseColumns
     let selectedRows = ref([])
-    let tableObject;
+    let tableObject = ref({});
     let tableObjectTemplate={};
+    let showEditDialog = ref(false);
 
     let dt;
     let editor;
@@ -369,14 +370,26 @@
 
     }
 
-    async function editSupabaseRows(){
-        console.log(selectedRows)
+    async function editSupabaseRow(){
+        console.log(tableObject.name)
         //let selectedRows = dt.rows({ selected: true }).data().toArray();
-        /* const { data, error } = await supabase
+        const { data, error } = await client
         .from(props.supabaseTableName)
-        .upsert(selectedRows)
+        .upsert(tableObject)
         .select()
-        return data; */
+        selectedRows[0] = data;
+        if (error) {
+            console.log(error)
+        }
+        else {
+            console.log(data)
+            selectedRows = data;
+            showEditDialog.value = false;
+            // update dt row
+            dt.row({ selected: true }).data(data[0]);
+            return data;
+        }
+        
     }
     async function deleteSupabaseRows(){
         if (!selectedRows.length === 0 && hasId(selectedRows[0])) {
