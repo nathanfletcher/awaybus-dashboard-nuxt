@@ -12,7 +12,12 @@
                             <v-toolbar color="primary" title="Add"></v-toolbar>
                             <v-card-text>
                                 <template v-for="jsonKey in Object.keys(tableObjectTemplate)" :key="jsonKey">
-                                    <v-text-field
+                                    <v-text-field v-if="jsonKey==props.supabaseTableId"
+                                    v-model="tableObjectTemplate[jsonKey]"
+                                    disabled
+                                    :label="jsonKey"
+                                    ></v-text-field>
+                                    <v-text-field v-else
                                     v-model="tableObjectTemplate[jsonKey]"
                                     :label="jsonKey"
                                     ></v-text-field>
@@ -41,7 +46,12 @@
                             <v-toolbar color="primary" title="Editing"></v-toolbar>
                             <v-card-text>
                                 <template v-for="jsonKey in Object.keys(tableObject)" :key="jsonKey">
-                                    <v-text-field
+                                    <v-text-field v-if="jsonKey==props.supabaseTableId"
+                                    v-model="tableObject[jsonKey]"
+                                    disabled
+                                    :label="jsonKey"
+                                    ></v-text-field>
+                                    <v-text-field v-else
                                     v-model="tableObject[jsonKey]"
                                     :label="jsonKey"
                                     ></v-text-field>
