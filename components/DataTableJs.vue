@@ -34,7 +34,7 @@
                 <v-col cols="auto">
                     <v-dialog width="auto">
                         <template v-slot:activator="{ props }">
-                        <v-btn color="primary" v-bind="props" :disabled="!selectedRows[0]">Edit</v-btn>
+                        <v-btn color="primary" v-bind="props" :disabled="selectedRows.length!=1 ">Edit</v-btn>
                         </template>
                         <template v-slot:default="{ isActive }">
                         <v-card width="400">
@@ -101,15 +101,15 @@
         @select="selectCallback"
         @deselect="selectCallback"
         :options="{
+            pageLength: 50,
+            lengthChange: false,
+            lengthMenu: [ 50, 75, 100,300,500 ],
             select:{ items: 'row', style:'multiple' },
             nowrap: true,
             scrollX: true,
             scrollCollapse: true,
             scrollY: 'calc(100vh - 300px)',
             dom: 'Bftip',
-            buttons: [
-                'copy', 'excel', 'pdf',
-                ]
             }"
         >  
             <thead>
@@ -201,9 +201,10 @@
     
     // get all data using useAsyncData
     let {data} =  await useAsyncData('awayBusDrivers', async () => {
-        const { data } = await client.from(props.supabaseTableName).select(queryColumns)
+        const { data } = await client.from(props.supabaseTableName).select(queryColumns).limit(1000)
         
         tableObjectTemplate =  clearObject(data[0])
+        console.log("Data total ",data.length)
         return data;
     })
     //tableObjectTemplate = clearObject(toRaw(data.value[0]))
@@ -232,11 +233,11 @@
     //tableHeaders.value = getTableHeaders(toRaw(data.value[0]));
 
     // get count of all drivers using useAsyncData
-    const {data:totalItems, pending, error} =  await useAsyncData('awayBusDriversCount', async () => {
+    /* const {data:totalItems, pending, error} =  await useAsyncData('awayBusDriversCount', async () => {
         const { data, count,error } = await client.from('awayBusDrivers').select('*',{count:'exact'})
         console.log('total count ',count)
         return count;
-    })
+    }) */
     
 
     async function getNextBatchOfDrivers({ page, itemsPerPage, sortBy }) {
