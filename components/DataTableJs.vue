@@ -61,7 +61,7 @@
                 </v-col>
 
                 <v-col cols="auto">
-                    <v-dialog transition="dialog-top-transition" width="auto">
+                    <v-dialog transition="dialog-top-transition" width="auto" v-model="showDeleteDialog">
                         <template v-slot:activator="{ props }">
                         <v-btn color="warning" v-bind="props" :disabled="!selectedRows.length>0">Delete</v-btn>
                         </template>
@@ -82,7 +82,7 @@
                                 </DataTable>
                             </v-card-text>
                             <v-card-actions class="justify-end">
-                            <v-btn color="danger" variant="tonal" @click="isActive.value = flase"
+                            <v-btn color="danger" variant="tonal" @click="deleteSupabaseRows"
                                 >Yes Delete</v-btn
                             >
                             <v-btn color="primary" variant="tonal" @click="isActive.value = false"
@@ -177,6 +177,7 @@
     let tableObject = ref({});
     let tableObjectTemplate={};
     let showEditDialog = ref(false);
+    let showDeleteDialog = ref(false);
 
     let dt;
     let editor;
@@ -377,7 +378,7 @@
         .from(props.supabaseTableName)
         .upsert(tableObject)
         .select()
-        selectedRows[0] = data;
+        selectedRows.value[0] = data;
         if (error) {
             console.log(error)
         }
@@ -392,15 +393,22 @@
         
     }
     async function deleteSupabaseRows(){
-        if (!selectedRows.length === 0 && hasId(selectedRows[0])) {
-            const { error } = await supabase
+            //console.log(selectedRows.value[0][props.supabaseTableId])
+            console.log("Starting deletion process",selectedRows.value[0][props.supabaseTableId])
+            const { error } = await client
             .from(props.supabaseTableName)
             .delete()
-            .eq(props.supabaseTableId, selectedRows[0][props.supabaseTableId])
-            return;
-        }
-        
-
+            .eq(props.supabaseTableId, selectedRows.value[0][props.supabaseTableId])
+            if (error) {
+                console.log(error)
+            }
+            else {
+                console.log('deleted')
+                // update dt
+                dt.rows({ selected: true }).remove().draw();
+                // dismiss dialog
+                showDeleteDialog.value = false;
+            }     
     }
 
     // return true if json keys contain 'id'
