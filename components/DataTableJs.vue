@@ -3,7 +3,7 @@
         <div class="controlPanel">
             <v-row>
                 <v-col cols="auto">
-                    <v-dialog width="auto">
+                    <v-dialog width="auto" v-model=showAddDialog>
                         <template v-slot:activator="{ props }">
                         <v-btn color="primary" v-bind="props">Add {{ props.tableName }}</v-btn>
                         </template>
@@ -11,7 +11,7 @@
                         <v-card width="400">
                             <v-toolbar color="primary" title="Add"></v-toolbar>
                             <v-card-text>
-                                <template v-for="jsonKey in Object.keys(tableObjectTemplate)" :key="jsonKey">
+                                <div v-for="jsonKey in Object.keys(tableObjectTemplate)" :key="jsonKey">
                                     <v-text-field v-if="jsonKey==props.supabaseTableId"
                                     v-model="tableObjectTemplate[jsonKey]"
                                     disabled
@@ -21,10 +21,10 @@
                                     v-model="tableObjectTemplate[jsonKey]"
                                     :label="jsonKey"
                                     ></v-text-field>
-                                </template> 
+                                </div> 
                             </v-card-text>
                                 <v-card-actions class="justify-end">
-                                    <v-btn color="primary" variant="tonal" @click="isActive.value = false"
+                                    <v-btn color="primary" variant="tonal" @click="createSupabaseRow"
                                         >Create</v-btn
                                     >
                                     <v-btn variant="text" @click="isActive.value = false"
@@ -184,10 +184,11 @@
     const loading = ref(false)
     const queryColumns = props.supabaseColumns
     let selectedRows = ref([])
-    let tableObject = ref({});
-    let tableObjectTemplate={};
+    let tableObject = toRaw({});
+    let tableObjectTemplate=reactive({});
     let showEditDialog = ref(false);
     let showDeleteDialog = ref(false);
+    let showAddDialog = ref(false);
 
     let dt;
     let editor;
@@ -214,12 +215,15 @@
     // get all data using useAsyncData
     let {data} =  await useAsyncData('awayBusDrivers', async () => {
         const { data } = await client.from(props.supabaseTableName).select(queryColumns).limit(1000)
-        
-        tableObjectTemplate =  clearObject(data[0])
+        //tableObjectTemplate =  clearObject(data[0])
         console.log("Data total ",data.length)
         return data;
     })
-    //tableObjectTemplate = clearObject(toRaw(data.value[0]))
+    tableObjectTemplate = clearObject(markRaw(data.value[0]))
+    // delete id key from tableObjectTemplate
+    delete tableObjectTemplate[props.supabaseTableId]
+    delete tableObjectTemplate["created_at"]
+
     // generate modal form if data has content
     const generateModalForm = (action) => {
         console.log('this is the action',action)
@@ -371,14 +375,35 @@
 
     }
     async function createSupabaseRow(){
+        let payload = toRaw(tableObjectTemplate);
+        // remove any payload keys that are empty
+        for (var key in payload) {
+            if (payload.hasOwnProperty(key)) {
+                if(payload[key] == ''){
+                    delete payload[key];
+                }
+            }
+        }
 
-        const { data, error } = await supabase
+        const { data, error } = await client
         .from(props.supabaseTableName)
-        .insert([
-            { some_column: 'someValue', other_column: 'otherValue' },
-        ])
+        .insert(
+            payload
+        )
         .select()
-
+        if (error) {
+            console.log(error)
+        }
+        else {
+            console.log(data)
+            //selectedRows.value[0] = data;
+            // update dt row
+            dt.row.add(data[0]).draw();
+            clearObject(tableObjectTemplate.value)
+            showAddDialog.value = false;
+            return data;
+        }
+        
     }
 
     async function editSupabaseRow(){
