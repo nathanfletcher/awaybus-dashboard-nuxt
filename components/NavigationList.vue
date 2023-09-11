@@ -24,6 +24,14 @@
     data: () => ({
       items: [
         {
+          title: 'Bus Stops',
+          value: 'stops',
+        },
+        {
+          title: 'Bus Routes',
+          value: 'routes',
+        },
+        {
           title: 'Drivers',
           value: 'drivers',
         },
@@ -31,6 +39,11 @@
           title: 'Users',
           value: 'users',
         },
+        {
+          title: 'Logout',
+          value: 'logout',
+        }
+        
       ],
     }),
   }
