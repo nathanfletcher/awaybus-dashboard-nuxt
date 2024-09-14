@@ -36,26 +36,38 @@
           <v-divider></v-divider>
 
           <v-card-text v-if="selectedRoute" class="overflow-y-auto" style="max-height: calc(100vh - 250px);">
-            <h3 class="text-h6 mb-2">Bus Stops</h3>
-            <v-list density="compact">
-              <v-list-item
-                v-for="(stop, index) in busStops"
-                :key="stop.osm_id"
-                :title="stop.name || 'Unnamed Stop'"
-                :subtitle="`ID: ${stop.osm_id}`"
-                class="mb-2"
-                draggable="true"
-                @dragstart="startDrag($event, index)"
-                @dragover.prevent
-                @dragenter.prevent
-                @drop="onDrop($event, index)"
-              >
-                <template v-slot:prepend>
-                  <v-icon icon="mdi-drag"></v-icon>
-                </template>
-              </v-list-item>
-            </v-list>
-          </v-card-text>
+    <h3 class="text-h6 mb-2">Bus Stops</h3>
+    <v-list density="compact">
+      <div
+        v-for="(stop, index) in busStops"
+        :key="stop.osm_id"
+        class="bus-stop-item"
+      >
+        <div
+          class="drag-placeholder"
+          :class="{ 'show': draggedIndex !== null && draggedIndex !== index }"
+          @dragenter="onDragEnter(index)"
+          @dragover.prevent
+          @dragleave="onDragLeave"
+        ></div>
+        <v-list-item
+          :title="stop.name || 'Unnamed Stop'"
+          :subtitle="`ID: ${stop.osm_id}`"
+          class="mb-2"
+          draggable="true"
+          @dragstart="startDrag($event, index)"
+          @dragend="endDrag"
+          @dragover.prevent
+          @drop="onDrop($event, index)"
+          :class="{ 'dragging': draggedIndex === index }"
+        >
+          <template v-slot:prepend>
+            <v-icon icon="mdi-drag"></v-icon>
+          </template>
+        </v-list-item>
+      </div>
+    </v-list>
+  </v-card-text>
         </v-card>
       </v-col>
     </v-row>
@@ -204,19 +216,40 @@ async function fetchBusStops(stopIds) {
   }
 }
 
+const draggedIndex = ref(null)
+const dropIndex = ref(null)
+
 function startDrag(evt, index) {
-  evt.dataTransfer.dropEffect = 'move'
   evt.dataTransfer.effectAllowed = 'move'
-  evt.dataTransfer.setData('itemIndex', index.toString())
+  evt.dataTransfer.setData('text/plain', index.toString())
+  draggedIndex.value = index
+}
+
+function endDrag() {
+  draggedIndex.value = null
+  dropIndex.value = null
+}
+
+function onDragEnter(index) {
+  if (index !== draggedIndex.value) {
+    dropIndex.value = index
+  }
+}
+
+function onDragLeave(evt) {
+  if (!evt.currentTarget.contains(evt.relatedTarget)) {
+    dropIndex.value = null
+  }
 }
 
 function onDrop(evt, newIndex) {
-  const oldIndex = parseInt(evt.dataTransfer.getData('itemIndex'))
+  const oldIndex = parseInt(evt.dataTransfer.getData('text/plain'))
   if (oldIndex !== newIndex) {
     const itemToMove = busStops.value.splice(oldIndex, 1)[0]
     busStops.value.splice(newIndex, 0, itemToMove)
     onReorder()
   }
+  endDrag()
 }
 
 function onReorder() {
@@ -272,7 +305,7 @@ watch(selectedRouteId, async (newId) => {
 })
 </script>
 
-<style>
+<style scoped>
 @import 'leaflet/dist/leaflet.css';
 
 #map {
@@ -336,4 +369,37 @@ watch(selectedRouteId, async (newId) => {
   height: 100vh;
   width: 100%;
 }
+
+.bus-stop-item {
+  position: relative;
+}
+
+.drag-placeholder {
+  height: 2px;
+  background-color: #2196F3;
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.drag-placeholder.show {
+  opacity: 1;
+}
+
+.v-list-item.dragging {
+  opacity: 0.5;
+}
+
+.v-list-item {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.v-list-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 </style>
