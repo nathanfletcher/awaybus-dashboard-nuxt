@@ -32,6 +32,10 @@
           value: 'routes',
         },
         {
+          title: 'Manage Routes',
+          value: 'busRouteManager',
+        },
+        {
           title: 'Drivers',
           value: 'drivers',
         },

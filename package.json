@@ -25,6 +25,7 @@
     "datatables.net-editor": "^2.2.2",
     "datatables.net-select": "^1.7.0",
     "datatables.net-select-dt": "^1.7.0",
-    "datatables.net-vue3": "^2.1.2"
+    "datatables.net-vue3": "^2.1.2",
+    "leaflet": "^1.9.4"
   }
 }
