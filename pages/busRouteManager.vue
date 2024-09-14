@@ -127,11 +127,40 @@ async function updateMapView() {
     }
 
     const bounds = $L.latLngBounds()
+    const routeCoordinates = []
     
-    stopsData.forEach(stop => {
+    stopsData.forEach((stop, index) => {
       if (stop.coordinates && stop.coordinates.length === 2) {
         const [lon, lat] = stop.coordinates
-        const marker = $L.marker([lat, lon])
+        let markerIcon
+
+        if (index === 0) {
+          // Starting stop (green)
+          markerIcon = $L.divIcon({
+            className: 'custom-div-icon',
+            html: "<div style='background-color:#4CAF50;' class='marker-pin'></div><i class='material-icons'>play_arrow</i>",
+            iconSize: [30, 42],
+            iconAnchor: [15, 42]
+          })
+        } else if (index === stopsData.length - 1) {
+          // Ending stop (red)
+          markerIcon = $L.divIcon({
+            className: 'custom-div-icon',
+            html: "<div style='background-color:#F44336;' class='marker-pin'></div><i class='material-icons'>stop</i>",
+            iconSize: [30, 42],
+            iconAnchor: [15, 42]
+          })
+        } else {
+          // Intermediate stops (blue)
+          markerIcon = $L.divIcon({
+            className: 'custom-div-icon',
+            html: "<div style='background-color:#2196F3;' class='marker-pin'></div><i class='material-icons'>place</i>",
+            iconSize: [30, 42],
+            iconAnchor: [15, 42]
+          })
+        }
+
+        const marker = $L.marker([lat, lon], { icon: markerIcon })
           .addTo(map.value)
           .bindPopup(`<b>${stop.name || 'Unnamed Stop'}</b><br>ID: ${stop.osm_id}`)
         
@@ -144,8 +173,15 @@ async function updateMapView() {
         
         markers.value.push(marker)
         bounds.extend([lat, lon])
+        routeCoordinates.push([lat, lon])
       }
     })
+    
+    // Draw the red line connecting stops in sequence
+    if (routeCoordinates.length > 1) {
+      const routeLine = $L.polyline(routeCoordinates, {color: 'red', weight: 3}).addTo(map.value)
+      markers.value.push(routeLine)
+    }
     
     if (bounds.isValid()) {
       map.value.fitBounds(bounds)
@@ -265,5 +301,31 @@ watch(selectedRouteId, async (newId) => {
 
 #map {
   min-height: 500px;
+}
+
+.custom-div-icon {
+  background: none;
+  border: none;
+}
+
+.custom-div-icon i {
+  position: absolute;
+  width: 22px;
+  font-size: 22px;
+  left: 0;
+  right: 0;
+  margin: 10px auto;
+  text-align: center;
+}
+
+.custom-div-icon .marker-pin {
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  position: absolute;
+  transform: rotate(-45deg);
+  left: 50%;
+  top: 50%;
+  margin: -15px 0 0 -15px;
 }
 </style>
