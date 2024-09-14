@@ -71,6 +71,7 @@ const hasChanges = computed(() => {
 
 onMounted(async () => {
   if (process.client) {
+    await nextTick()
     initMap()
     await fetchRoutes()
   }
@@ -92,10 +93,12 @@ async function fetchRoutes() {
 
 function initMap() {
   if (!map.value) {
-    map.value = $L.map('map').setView([0, 0], 2)
-    $L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map.value)
+    nextTick(() => {
+      map.value = $L.map('map').setView([0, 0], 2)
+      $L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map.value)
+    })
   }
 }
 
@@ -150,6 +153,9 @@ async function updateMapView() {
       console.warn('No valid bounds for the selected route')
       map.value.setView([0, 0], 2) // Set a default view
     }
+  } else if (!map.value) {
+    console.warn('Map not initialized yet')
+    initMap()
   }
 }
 

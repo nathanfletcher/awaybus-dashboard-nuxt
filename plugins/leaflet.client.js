@@ -1,4 +1,5 @@
 import L from 'leaflet'
+import './leaflet-fix'
 
 export default defineNuxtPlugin((nuxtApp) => {
   if (process.client) {
@@ -11,7 +12,5 @@ export default defineNuxtPlugin((nuxtApp) => {
 
     // Make L available globally
     nuxtApp.provide('L', L)
-
-    // No need to initialize the map here, we'll do it in the component
   }
 })
