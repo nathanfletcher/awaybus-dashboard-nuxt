@@ -1,19 +1,16 @@
 <template>
   <div class="flex flex-col h-screen bg-gray-100">
-    <!-- Top panel for route management -->
     <div class="p-4 bg-white shadow-md">
       <h1 class="text-2xl font-bold mb-4 text-gray-800">Bus Route Manager</h1>
       
       <div class="flex flex-wrap items-center gap-4 mb-4">
-        <!-- Route selection -->
         <select v-model="selectedRouteId" class="p-2 border rounded flex-grow">
           <option value="">Select a route</option>
-          <option v-for="route in routes" :key="route.id" :value="route.id">
-            {{ route.name }}
+          <option v-for="route in routes" :key="route.osm_id" :value="route.osm_id">
+            {{ route.name || route.ref || 'Unnamed Route' }}
           </option>
         </select>
         
-        <!-- Action buttons -->
         <button @click="saveRoute" class="bg-blue-500 text-white px-4 py-2 rounded" :disabled="!hasChanges">
           Save Changes
         </button>
@@ -28,7 +25,6 @@
         </button>
       </div>
       
-      <!-- Route details and stop list -->
       <div v-if="selectedRoute" class="mb-4">
         <input v-model="selectedRoute.name" class="w-full p-2 border rounded mb-2" placeholder="Route name" />
         <draggable v-model="selectedRoute.stops" item-key="id" handle=".handle" @end="onReorder" class="max-h-40 overflow-y-auto">
@@ -43,7 +39,6 @@
       </div>
     </div>
     
-    <!-- Map panel -->
     <div class="flex-grow relative">
       <div id="map" class="w-full h-full"></div>
     </div>
@@ -53,30 +48,20 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useNuxtApp } from '#app'
+import { useSupabaseClient } from '#imports'
 
-// Mocking draggable component for this example
 const draggable = {
   name: 'draggable',
   template: '<div><slot></slot></div>'
 }
 
-// Sample data (replace with your actual data fetching logic)
-const routes = ref([
-  { id: 1, name: 'Route 1', stops: [
-    { id: 1, name: 'Stop A', lat: 40.7128, lng: -74.0060 },
-    { id: 2, name: 'Stop B', lat: 40.7282, lng: -73.7949 },
-  ]},
-  { id: 2, name: 'Route 2', stops: [
-    { id: 3, name: 'Stop C', lat: 40.7489, lng: -73.9680 },
-    { id: 4, name: 'Stop D', lat: 40.7589, lng: -73.9851 },
-  ]},
-])
-
+const supabase = useSupabaseClient()
+const routes = ref([])
 const selectedRouteId = ref(null)
-const selectedRoute = computed(() => routes.value.find(r => r.id === selectedRouteId.value))
+const selectedRoute = computed(() => routes.value.find(r => r.osm_id === selectedRouteId.value))
 const originalRoute = ref(null)
 const map = ref(null)
-const routeLine = ref(null)
+const markers = ref([])
 const { $L } = useNuxtApp()
 
 const hasChanges = computed(() => {
@@ -84,52 +69,129 @@ const hasChanges = computed(() => {
   return JSON.stringify(selectedRoute.value) !== JSON.stringify(originalRoute.value)
 })
 
-onMounted(() => {
+onMounted(async () => {
   if (process.client) {
     initMap()
+    await fetchRoutes()
   }
 })
 
+async function fetchRoutes() {
+  try {
+    const { data, error } = await supabase
+      .from('awayBusRoutes')
+      .select('osm_id, name, ref, busStops')
+    
+    if (error) throw error
+    
+    routes.value = data
+  } catch (error) {
+    console.error('Error fetching routes:', error.message)
+  }
+}
+
 function initMap() {
   if (!map.value) {
-    map.value = $L.map('map').setView([40.7128, -74.0060], 10)
+    map.value = $L.map('map').setView([0, 0], 2)
     $L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map.value)
   }
 }
 
-function updateMapView() {
+async function updateMapView() {
   if (selectedRoute.value && map.value) {
-    const bounds = $L.latLngBounds(selectedRoute.value.stops.map(stop => [stop.lat, stop.lng]))
-    map.value.fitBounds(bounds)
-
-    if (routeLine.value) {
-      map.value.removeLayer(routeLine.value)
+    clearMapView()
+    
+    let busStops;
+    try {
+      busStops = JSON.parse(selectedRoute.value.busStops).stops;
+    } catch (e) {
+      console.error('Failed to parse busStops:', e);
+      busStops = [];
     }
 
-    routeLine.value = $L.polyline(selectedRoute.value.stops.map(stop => [stop.lat, stop.lng]), {
-      color: 'blue'
-    }).addTo(map.value)
+    if (!Array.isArray(busStops)) {
+      console.error('busStops is not an array:', busStops);
+      busStops = [];
+    }
 
-    selectedRoute.value.stops.forEach(stop => {
-      $L.marker([stop.lat, stop.lng])
-        .addTo(map.value)
-        .bindPopup(stop.name)
+    const stopsData = await fetchBusStops(busStops)
+    
+    if (stopsData.length === 0) {
+      console.warn('No valid bus stops found for this route')
+      return
+    }
+
+    const bounds = $L.latLngBounds()
+    
+    stopsData.forEach(stop => {
+      if (stop.coordinates && stop.coordinates.length === 2) {
+        const [lon, lat] = stop.coordinates
+        const marker = $L.marker([lat, lon])
+          .addTo(map.value)
+          .bindPopup(`<b>${stop.name || 'Unnamed Stop'}</b><br>ID: ${stop.osm_id}`)
+        
+        marker.on('mouseover', function (e) {
+          this.openPopup()
+        })
+        marker.on('mouseout', function (e) {
+          this.closePopup()
+        })
+        
+        markers.value.push(marker)
+        bounds.extend([lat, lon])
+      }
     })
+    
+    if (bounds.isValid()) {
+      map.value.fitBounds(bounds)
+    } else {
+      console.warn('No valid bounds for the selected route')
+      map.value.setView([0, 0], 2) // Set a default view
+    }
   }
 }
 
 function clearMapView() {
-  if (map.value) {
-    if (routeLine.value) {
-      map.value.removeLayer(routeLine.value)
-    }
-    map.value.eachLayer(layer => {
-      if (layer instanceof $L.Marker || layer instanceof $L.Polyline) {
-        map.value.removeLayer(layer)
+  markers.value.forEach(marker => map.value.removeLayer(marker))
+  markers.value = []
+}
+
+async function fetchBusStops(stopIds) {
+  try {
+    const { data, error } = await supabase
+      .from('awayBusStops')
+      .select('osm_id, "Name", geometry')
+      .in('osm_id', stopIds)
+    
+    if (error) throw error
+    
+    return data.map(stop => {
+      let coordinates;
+      if (typeof stop.geometry === 'string') {
+        try {
+          coordinates = JSON.parse(stop.geometry).coordinates;
+        } catch (e) {
+          console.warn(`Failed to parse geometry for stop ${stop.osm_id}:`, e);
+          coordinates = null;
+        }
+      } else if (typeof stop.geometry === 'object' && stop.geometry !== null) {
+        coordinates = stop.geometry.coordinates;
+      } else {
+        console.warn(`Invalid geometry format for stop ${stop.osm_id}`);
+        coordinates = null;
       }
-    })
+
+      return {
+        osm_id: stop.osm_id,
+        name: stop.Name,
+        coordinates: coordinates
+      };
+    }).filter(stop => stop.coordinates !== null);
+  } catch (error) {
+    console.error('Error fetching bus stops:', error.message);
+    return [];
   }
 }
 
@@ -182,13 +244,20 @@ function deleteRoute() {
     }
   }
 }
+
+watch(selectedRouteId, async (newId) => {
+  if (newId) {
+    updateMapView()
+  } else {
+    clearMapView()
+  }
+})
 </script>
 
 <style>
 @import 'leaflet/dist/leaflet.css';
 
-/* Ensure the map container takes up the full height */
 #map {
-  min-height: 500px; /* Adjust this value as needed */
+  min-height: 500px;
 }
 </style>
