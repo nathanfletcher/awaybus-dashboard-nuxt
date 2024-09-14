@@ -83,9 +83,9 @@ const hasChanges = computed(() => {
 
 onMounted(async () => {
   if (process.client) {
+    await fetchRoutes()
     await nextTick()
     initMap()
-    await fetchRoutes()
   }
 })
 
@@ -105,16 +105,19 @@ async function fetchRoutes() {
 
 function initMap() {
   if (!map.value) {
-    nextTick(() => {
-      map.value = $L.map('map').setView([0, 0], 2)
-      $L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map.value)
-    })
+    map.value = $L.map('map').setView([0, 0], 2)
+    $L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map.value)
   }
 }
 
 async function updateMapView() {
+  if (!map.value) {
+    await nextTick()
+    initMap()
+  }
+
   if (selectedRoute.value && map.value) {
     clearMapView()
     
@@ -124,41 +127,20 @@ async function updateMapView() {
     busStops.value.forEach((stop, index) => {
       if (stop.coordinates && stop.coordinates.length === 2) {
         const [lon, lat] = stop.coordinates
-        let markerIcon
-
-        if (index === 0) {
-          markerIcon = $L.divIcon({
-            className: 'custom-div-icon',
-            html: "<div style='background-color:#4CAF50;' class='marker-pin'></div><i class='material-icons'>play_arrow</i>",
-            iconSize: [30, 42],
-            iconAnchor: [15, 42]
-          })
-        } else if (index === busStops.value.length - 1) {
-          markerIcon = $L.divIcon({
-            className: 'custom-div-icon',
-            html: "<div style='background-color:#F44336;' class='marker-pin'></div><i class='material-icons'>stop</i>",
-            iconSize: [30, 42],
-            iconAnchor: [15, 42]
-          })
-        } else {
-          markerIcon = $L.divIcon({
-            className: 'custom-div-icon',
-            html: "<div style='background-color:#2196F3;' class='marker-pin'></div><i class='material-icons'>place</i>",
-            iconSize: [30, 42],
-            iconAnchor: [15, 42]
-          })
-        }
+        let markerIcon = $L.icon({
+          iconUrl: index === 0 ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png' :
+                   index === busStops.value.length - 1 ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png' :
+                   'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41]
+        })
 
         const marker = $L.marker([lat, lon], { icon: markerIcon })
           .addTo(map.value)
           .bindPopup(`<b>${stop.name || 'Unnamed Stop'}</b><br>ID: ${stop.osm_id}`)
-        
-        marker.on('mouseover', function (e) {
-          this.openPopup()
-        })
-        marker.on('mouseout', function (e) {
-          this.closePopup()
-        })
         
         markers.value.push(marker)
         bounds.extend([lat, lon])
@@ -282,7 +264,7 @@ watch(selectedRouteId, async (newId) => {
 
       busStops.value = await fetchBusStops(stopIds)
       originalBusStops.value = JSON.parse(JSON.stringify(busStops.value))
-      updateMapView()
+      await updateMapView()
     }
   } else {
     clearMapView()
@@ -322,5 +304,36 @@ watch(selectedRouteId, async (newId) => {
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+.custom-div-icon {
+  background: none;
+  border: none;
+}
+
+.marker-pin {
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  position: absolute;
+  transform: rotate(-45deg);
+  left: 50%;
+  top: 50%;
+  margin: -15px 0 0 -15px;
+}
+
+.marker-icon {
+  position: absolute;
+  width: 22px;
+  font-size: 22px;
+  left: 0;
+  right: 0;
+  top: 10px;
+  text-align: center;
+}
+
+#map {
+  height: 100vh;
+  width: 100%;
 }
 </style>
