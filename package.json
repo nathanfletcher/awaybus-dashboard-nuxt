@@ -26,6 +26,7 @@
     "datatables.net-select": "^1.7.0",
     "datatables.net-select-dt": "^1.7.0",
     "datatables.net-vue3": "^2.1.2",
-    "leaflet": "^1.9.4"
+    "leaflet": "^1.9.4",
+    "vuedraggable": "^4.1.0"
   }
 }

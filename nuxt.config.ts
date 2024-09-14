@@ -6,4 +6,10 @@ export default defineNuxtConfig({
   css: [
     'leaflet/dist/leaflet.css'
   ],
+  // Remove the plugins array if it's empty after removing vuedraggable
+  // plugins: [],
+  // Remove the build.transpile option if it's only for vuedraggable
+  // build: {
+  //   transpile: []
+  // },
 })
