@@ -213,16 +213,18 @@
     // })
     
     // get all data using useAsyncData
-    let {data} =  await useAsyncData('awayBusDrivers', async () => {
+    let {data} =  await useAsyncData(`fetch_${props.supabaseTableName}`, async () => {
         const { data } = await client.from(props.supabaseTableName).select(queryColumns).limit(1000)
-        //tableObjectTemplate =  clearObject(data[0])
-        console.log("Data total ",data.length)
-        return data;
+        console.log("Data total ", data?.length)
+        return data || [];
     })
-    tableObjectTemplate = clearObject(markRaw(data.value[0]))
-    // delete id key from tableObjectTemplate
-    delete tableObjectTemplate[props.supabaseTableId]
-    delete tableObjectTemplate["created_at"]
+    
+    if (data.value && data.value.length > 0) {
+        tableObjectTemplate = clearObject(Object.assign({}, toRaw(data.value[0])))
+        // delete id key from tableObjectTemplate
+        delete tableObjectTemplate[props.supabaseTableId]
+        delete tableObjectTemplate["created_at"]
+    }
 
     // generate modal form if data has content
     const generateModalForm = (action) => {
@@ -243,8 +245,10 @@
     if(props.tableHeaders != undefined){
         localTableHeaders.value = props.tableHeaders
     }
-    else{
+    else if (data.value && data.value.length > 0) {
         localTableHeaders.value = getTableHeaders(toRaw(data.value[0]));
+    } else {
+        localTableHeaders.value = [];
     }
     //tableHeaders.value = getTableHeaders(toRaw(data.value[0]));
 
