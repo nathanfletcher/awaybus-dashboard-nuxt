@@ -242,7 +242,7 @@ const currentRouteStops = ref([]);
 const currentEditingRoute = ref(null);
 
 // Fetch Data using Nuxt isomorphic fetching
-const { data: asyncData, pending: asyncPending, error: fetchError, refresh: refreshNuxtData } = await useAsyncData(
+const { data: asyncData, pending: asyncPending, error: fetchError, refresh: refreshNuxtData } = useLazyAsyncData(
     `fetch_${props.supabaseTableName}`,
     async () => {
         let allData = [];
