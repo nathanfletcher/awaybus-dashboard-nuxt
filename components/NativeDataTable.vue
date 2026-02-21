@@ -4,7 +4,7 @@
             <h2 class="text-h5 font-weight-bold text-capitalize">{{ props.supabaseTableName.replace('awayBus', '') }} Management</h2>
             <div class="d-flex gap-2">
                 <!-- Add Dialog -->
-                <v-dialog :width="props.supabaseTableName === 'awayBusStops' ? 1000 : 500" v-model="showAddDialog">
+                <v-dialog :width="['awayBusStops', 'awayBusRoutes'].includes(props.supabaseTableName) ? 1200 : 500" v-model="showAddDialog">
                     <template v-slot:activator="{ props }">
                         <v-btn color="primary" v-bind="props" prepend-icon="mdi-plus">Add</v-btn>
                     </template>
@@ -23,6 +23,7 @@
                                             ></v-text-field>
                                             <v-text-field v-else
                                                 v-model="tableObjectTemplate[jsonKey]"
+                                                v-show="!(props.supabaseTableName === 'awayBusRoutes' && jsonKey === 'busStops')"
                                                 :label="jsonKey"
                                                 @input="updateBusStopMapFromInput"
                                                 variant="outlined" density="compact" class="mb-2"
@@ -36,6 +37,41 @@
                                     <div id="busStopAddMapNative" style="height: 400px; border: 1px solid #ccc; border-radius: 4px;"></div>
                                 </v-col>
                             </v-row>
+                            <v-divider class="my-4" v-if="props.supabaseTableName === 'awayBusRoutes'"></v-divider>
+                            <v-row v-if="props.supabaseTableName === 'awayBusRoutes'">
+                                <v-col cols="4">
+                                    <h3>Available Stops</h3>
+                                    <v-text-field v-model="stopSearch" label="Search Stops" density="compact" variant="outlined" hide-details class="mb-2" prepend-inner-icon="mdi-magnify"></v-text-field>
+                                    <v-list height="400" style="overflow-y: auto" border class="rounded">
+                                        <v-list-item v-for="stop in filteredStops" :key="stop.osm_id" @click="addStopToRoute(stop)">
+                                            <v-list-item-title>{{ stop.Name || 'Unnamed' }}</v-list-item-title>
+                                            <v-list-item-subtitle>{{ stop.osm_id }}</v-list-item-subtitle>
+                                            <template v-slot:append>
+                                                <v-icon icon="mdi-plus-circle" color="success"></v-icon>
+                                            </template>
+                                        </v-list-item>
+                                    </v-list>
+                                </v-col>
+                                <v-col cols="5">
+                                    <h3>Route Map <span class="text-caption font-weight-regular ml-2">(Click gray dots to add)</span></h3>
+                                    <div id="routeMapNativeAdd" style="height: 400px; border: 1px solid #ccc; border-radius: 4px;"></div>
+                                </v-col>
+                                <v-col cols="3">
+                                    <h3>Route Order</h3>
+                                    <v-list height="400" style="overflow-y: auto" border class="rounded">
+                                        <v-list-item v-for="(stopId, index) in currentRouteStops" :key="index">
+                                            <v-list-item-title class="text-wrap">{{ getStopName(stopId) }}</v-list-item-title>
+                                            <template v-slot:append>
+                                                <div class="d-flex align-center">
+                                                    <v-btn icon="mdi-arrow-up" variant="text" size="small" density="comfortable" @click="moveStop(index, -1)" :disabled="index === 0"></v-btn>
+                                                    <v-btn icon="mdi-arrow-down" variant="text" size="small" density="comfortable" @click="moveStop(index, 1)" :disabled="index === currentRouteStops.length - 1"></v-btn>
+                                                    <v-btn icon="mdi-delete" variant="text" size="small" density="comfortable" color="error" @click="removeStop(index)"></v-btn>
+                                                </div>
+                                            </template>
+                                        </v-list-item>
+                                    </v-list>
+                                </v-col>
+                            </v-row>
                         </v-card-text>
                         <v-card-actions class="justify-end pa-4">
                             <v-btn variant="text" @click="closeAddDialog">Cancel</v-btn>
@@ -45,7 +81,7 @@
                 </v-dialog>
 
                 <!-- Edit Dialog -->
-                <v-dialog :width="props.supabaseTableName === 'awayBusStops' ? 1000 : 500" v-model="showEditDialog">
+                <v-dialog :width="['awayBusStops', 'awayBusRoutes'].includes(props.supabaseTableName) ? 1200 : 500" v-model="showEditDialog">
                     <template v-slot:activator="{ props }">
                         <v-btn color="secondary" v-bind="props" :disabled="selectedRows.length !== 1" @click="openEditDialog" prepend-icon="mdi-pencil">Edit</v-btn>
                     </template>
@@ -64,6 +100,7 @@
                                             ></v-text-field>
                                             <v-text-field v-else
                                                 v-model="tableObject[jsonKey]"
+                                                v-show="!(props.supabaseTableName === 'awayBusRoutes' && jsonKey === 'busStops')"
                                                 :label="jsonKey"
                                                 @input="updateBusStopMapFromInput"
                                                 variant="outlined" density="compact" class="mb-2"
@@ -75,6 +112,41 @@
                                     <h3>Stop Location</h3>
                                     <p class="text-caption">Click the map or drag the marker to update coordinates.</p>
                                     <div id="busStopEditMapNative" style="height: 400px; border: 1px solid #ccc; border-radius: 4px;"></div>
+                                </v-col>
+                            </v-row>
+                            <v-divider class="my-4" v-if="props.supabaseTableName === 'awayBusRoutes'"></v-divider>
+                            <v-row v-if="props.supabaseTableName === 'awayBusRoutes'">
+                                <v-col cols="4">
+                                    <h3>Available Stops</h3>
+                                    <v-text-field v-model="stopSearch" label="Search Stops" density="compact" variant="outlined" hide-details class="mb-2" prepend-inner-icon="mdi-magnify"></v-text-field>
+                                    <v-list height="400" style="overflow-y: auto" border class="rounded">
+                                        <v-list-item v-for="stop in filteredStops" :key="stop.osm_id" @click="addStopToRoute(stop)">
+                                            <v-list-item-title>{{ stop.Name || 'Unnamed' }}</v-list-item-title>
+                                            <v-list-item-subtitle>{{ stop.osm_id }}</v-list-item-subtitle>
+                                            <template v-slot:append>
+                                                <v-icon icon="mdi-plus-circle" color="success"></v-icon>
+                                            </template>
+                                        </v-list-item>
+                                    </v-list>
+                                </v-col>
+                                <v-col cols="5">
+                                    <h3>Route Map <span class="text-caption font-weight-regular ml-2">(Click gray dots to add)</span></h3>
+                                    <div id="routeMapNativeEdit" style="height: 400px; border: 1px solid #ccc; border-radius: 4px;"></div>
+                                </v-col>
+                                <v-col cols="3">
+                                    <h3>Route Order</h3>
+                                    <v-list height="400" style="overflow-y: auto" border class="rounded">
+                                        <v-list-item v-for="(stopId, index) in currentRouteStops" :key="index">
+                                            <v-list-item-title class="text-wrap">{{ getStopName(stopId) }}</v-list-item-title>
+                                            <template v-slot:append>
+                                                <div class="d-flex align-center">
+                                                    <v-btn icon="mdi-arrow-up" variant="text" size="small" density="comfortable" @click="moveStop(index, -1)" :disabled="index === 0"></v-btn>
+                                                    <v-btn icon="mdi-arrow-down" variant="text" size="small" density="comfortable" @click="moveStop(index, 1)" :disabled="index === currentRouteStops.length - 1"></v-btn>
+                                                    <v-btn icon="mdi-delete" variant="text" size="small" density="comfortable" color="error" @click="removeStop(index)"></v-btn>
+                                                </div>
+                                            </template>
+                                        </v-list-item>
+                                    </v-list>
                                 </v-col>
                             </v-row>
                         </v-card-text>
@@ -102,54 +174,7 @@
                     </v-card>
                 </v-dialog>
 
-                <!-- Route Builder Dialog -->
-                <v-dialog width="1200" v-model="showRouteBuilder">
-                    <v-card>
-                        <v-toolbar color="primary" title="Interactive Route Builder"></v-toolbar>
-                        <v-card-text class="pt-4">
-                            <v-alert type="info" variant="tonal" class="mb-4">Select stops to add them to the route. Map will preview the path.</v-alert>
-                            <v-row>
-                                <v-col cols="4">
-                                    <h3>Available Stops</h3>
-                                    <v-text-field v-model="stopSearch" label="Search Stops" density="compact" variant="outlined" hide-details class="mb-2" prepend-inner-icon="mdi-magnify"></v-text-field>
-                                    <v-list height="450" style="overflow-y: auto" border class="rounded">
-                                        <v-list-item v-for="stop in filteredStops" :key="stop.osm_id" @click="addStopToRoute(stop)">
-                                            <v-list-item-title>{{ stop.Name || 'Unnamed' }}</v-list-item-title>
-                                            <v-list-item-subtitle>{{ stop.osm_id }}</v-list-item-subtitle>
-                                            <template v-slot:append>
-                                                <v-icon icon="mdi-plus-circle" color="success"></v-icon>
-                                            </template>
-                                        </v-list-item>
-                                    </v-list>
-                                </v-col>
-                                <v-col cols="5">
-                                    <h3>Route Map</h3>
-                                    <div id="routeMapNative" style="height: 450px; border: 1px solid #ccc; border-radius: 4px;"></div>
-                                </v-col>
-                                <v-col cols="3">
-                                    <h3>Route Order</h3>
-                                    <v-list height="450" style="overflow-y: auto" border class="rounded">
-                                        <v-list-item v-for="(stopId, index) in currentRouteStops" :key="index">
-                                            <v-list-item-title class="text-wrap">{{ getStopName(stopId) }}</v-list-item-title>
-                                            <template v-slot:append>
-                                                <div class="d-flex align-center">
-                                                    <v-btn icon="mdi-arrow-up" variant="text" size="small" density="comfortable" @click="moveStop(index, -1)" :disabled="index === 0"></v-btn>
-                                                    <v-btn icon="mdi-arrow-down" variant="text" size="small" density="comfortable" @click="moveStop(index, 1)" :disabled="index === currentRouteStops.length - 1"></v-btn>
-                                                    <v-btn icon="mdi-delete" variant="text" size="small" density="comfortable" color="error" @click="removeStop(index)"></v-btn>
-                                                </div>
-                                            </template>
-                                        </v-list-item>
-                                    </v-list>
-                                </v-col>
-                            </v-row>
-                        </v-card-text>
-                        <v-card-actions class="pa-4">
-                            <v-spacer></v-spacer>
-                            <v-btn variant="text" @click="closeRouteBuilder">Cancel</v-btn>
-                            <v-btn color="primary" variant="elevated" @click="saveRouteStops">Save Route</v-btn>
-                        </v-card-actions>
-                    </v-card>
-                </v-dialog>
+                
             </div>
         </div>
 
@@ -192,8 +217,7 @@
             <template v-slot:item.actions="{ item }">
                 <v-btn v-if="props.supabaseTableName === 'awayBusDrivers' && !item.isVerified" 
                     color="success" size="small" variant="tonal" @click.stop="verifyDriver(item)">Verify</v-btn>
-                <v-btn v-if="props.supabaseTableName === 'awayBusRoutes'" 
-                    color="primary" size="small" variant="tonal" @click.stop="openRouteBuilder(item)">Edit Stops</v-btn>
+                
             </template>
         </v-data-table>
     </v-card>
@@ -331,6 +355,14 @@ function openEditDialog() {
         showEditDialog.value = true;
         if (props.supabaseTableName === 'awayBusStops') {
             initBusStopMap('busStopEditMapNative', tableObject);
+        } else if (props.supabaseTableName === 'awayBusRoutes') {
+            try {
+                const stops = typeof tableObject.value.busStops === 'string' ? JSON.parse(tableObject.value.busStops) : tableObject.value.busStops;
+                currentRouteStops.value = Array.isArray(stops) ? [...stops] : [];
+            } catch(e) { currentRouteStops.value = []; }
+            if (routeMapInstance) routeMapInstance.hasFitted = false;
+            if (allStops.value.length === 0) fetchAllStops().then(() => initRouteMapNative('routeMapNativeEdit'));
+            else setTimeout(() => initRouteMapNative('routeMapNativeEdit'), 300);
         }
     }
 }
@@ -362,6 +394,11 @@ watch(showAddDialog, (val) => {
         }
         if (props.supabaseTableName === 'awayBusStops') {
             initBusStopMap('busStopAddMapNative', tableObjectTemplate);
+        } else if (props.supabaseTableName === 'awayBusRoutes') {
+            currentRouteStops.value = [];
+            if (routeMapInstance) routeMapInstance.hasFitted = false;
+            if (allStops.value.length === 0) fetchAllStops().then(() => initRouteMapNative('routeMapNativeAdd'));
+            else setTimeout(() => initRouteMapNative('routeMapNativeAdd'), 300);
         }
     } else if (!val && busStopMapInstance) {
         busStopMapInstance.remove();
@@ -447,6 +484,7 @@ function updateBusStopMapFromInput() {
 // CRUD Operations
 async function createSupabaseRow() {
     let payload = Object.assign({}, toRaw(tableObjectTemplate.value));
+    if (props.supabaseTableName === 'awayBusRoutes') payload.busStops = currentRouteStops.value;
     let finalPayload = {};
     for (let key in payload) {
         if (payload[key] === '' || payload[key] === null || payload[key] === undefined) continue;
@@ -472,6 +510,7 @@ async function createSupabaseRow() {
 
 async function editSupabaseRow() {
     let payload = Object.assign({}, toRaw(tableObject.value));
+    if (props.supabaseTableName === 'awayBusRoutes') payload.busStops = currentRouteStops.value;
     let finalPayload = {};
     for (let key in payload) {
         if (payload[key] === '' || payload[key] === null || payload[key] === undefined) continue;
@@ -586,60 +625,16 @@ function moveStop(index, direction) {
     updateRouteMapNative();
 }
 
-async function openRouteBuilder(route) {
-    if (allStops.value.length === 0) await fetchAllStops();
-    currentEditingRoute.value = Object.assign({}, toRaw(route));
-    try {
-        const stops = typeof route.busStops === 'string' ? JSON.parse(route.busStops) : route.busStops;
-        currentRouteStops.value = Array.isArray(stops) ? [...stops] : [];
-    } catch (e) {
-        currentRouteStops.value = [];
-    }
-    showRouteBuilder.value = true;
-    setTimeout(initRouteMapNative, 300);
-}
-
-function closeRouteBuilder() {
-    showRouteBuilder.value = false;
-    if (routeMapInstance) {
-        routeMapInstance.remove();
-        routeMapInstance = null;
-        routePolyline = null;
-        routeMarkers = [];
-    }
-}
-
-async function saveRouteStops() {
-    const { data: updatedData, error } = await client
-        .from('awayBusRoutes')
-        .update({ busStops: currentRouteStops.value })
-        .eq('osm_id', currentEditingRoute.value.osm_id)
-        .select();
-    
-    if (!error && updatedData && updatedData.length > 0) {
-        const idx = data.value.findIndex(item => item.osm_id === currentEditingRoute.value.osm_id);
-        if (idx !== -1) {
-            const newData = [...data.value];
-            newData[idx].busStops = updatedData[0].busStops;
-            data.value = newData;
-        }
-        closeRouteBuilder();
-    }
-}
-
-function initRouteMapNative() {
+function initRouteMapNative(mapId) {
     if (!process.client) return;
     import('leaflet').then(L => {
-        if (routeMapInstance) {
-            routeMapInstance.remove();
-        }
-        const mapEl = document.getElementById('routeMapNative');
+        if (routeMapInstance) routeMapInstance.remove();
+        
+        const mapEl = document.getElementById(mapId);
         if (!mapEl) return;
         
-        routeMapInstance = L.map('routeMapNative').setView([5.6037, -0.1870], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19
-        }).addTo(routeMapInstance);
+        routeMapInstance = L.map(mapId).setView([5.6037, -0.1870], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(routeMapInstance);
         
         updateRouteMapNative();
     });
@@ -648,12 +643,34 @@ function initRouteMapNative() {
 function updateRouteMapNative() {
     if (!routeMapInstance || !process.client) return;
     import('leaflet').then(L => {
-        if (routePolyline) {
-            routeMapInstance.removeLayer(routePolyline);
-        }
+        if (routePolyline) routeMapInstance.removeLayer(routePolyline);
         routeMarkers.forEach(m => routeMapInstance.removeLayer(m));
         routeMarkers = [];
 
+        // 1. Draw ALL available stops as small gray clickable dots
+        allStops.value.forEach(stop => {
+            if (stop.coordinates) {
+                const parts = String(stop.coordinates).split(',');
+                if (parts.length === 2) {
+                    const lat = parseFloat(parts[1]);
+                    const lon = parseFloat(parts[0]);
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                        const isSelected = currentRouteStops.value.includes(stop.osm_id);
+                        if (!isSelected) {
+                            const marker = L.circleMarker([lat, lon], {
+                                radius: 5, color: '#888', fillColor: '#ccc', fillOpacity: 0.6, weight: 1
+                            }).bindTooltip(stop.Name || 'Unnamed');
+                            
+                            marker.on('click', () => addStopToRoute(stop));
+                            marker.addTo(routeMapInstance);
+                            routeMarkers.push(marker);
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Draw selected route stops and polyline
         const latLngs = [];
         currentRouteStops.value.forEach((stopId, index) => {
             const stop = allStops.value.find(s => s.osm_id == stopId);
@@ -664,13 +681,12 @@ function updateRouteMapNative() {
                     const lon = parseFloat(parts[0]);
                     if (!isNaN(lat) && !isNaN(lon)) {
                         latLngs.push([lat, lon]);
-                        
-                        let color = 'blue';
-                        if (index === 0) color = 'green';
-                        else if (index === currentRouteStops.value.length - 1) color = 'red';
+                        let color = '#3b82f6'; // blue
+                        if (index === 0) color = '#22c55e'; // green (start)
+                        else if (index === currentRouteStops.value.length - 1) color = '#ef4444'; // red (end)
 
-                        const markerHtml = `<div style="background-color: ${color}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`;
-                        const icon = L.divIcon({ html: markerHtml, className: '', iconSize: [12, 12], iconAnchor: [6, 6] });
+                        const markerHtml = `<div style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.5);"></div>`;
+                        const icon = L.divIcon({ html: markerHtml, className: '', iconSize: [14, 14], iconAnchor: [7, 7] });
                         
                         const marker = L.marker([lat, lon], { icon }).bindPopup(`${index + 1}: ${stop.Name || 'Unnamed'}`);
                         marker.addTo(routeMapInstance);
@@ -680,11 +696,17 @@ function updateRouteMapNative() {
             }
         });
 
-        if (latLngs.length > 0) {
-            routePolyline = L.polyline(latLngs, { color: 'blue', weight: 4, opacity: 0.7 }).addTo(routeMapInstance);
-            routeMapInstance.fitBounds(routePolyline.getBounds(), { padding: [50, 50] });
+        if (latLngs.length > 1) {
+            routePolyline = L.polyline(latLngs, { color: '#3b82f6', weight: 4, opacity: 0.8 }).addTo(routeMapInstance);
+        }
+        
+        // Auto-fit bounds only if there are stops and we haven't done it yet this session
+        if (latLngs.length > 0 && !routeMapInstance.hasFitted) {
+            routeMapInstance.fitBounds(L.polyline(latLngs).getBounds(), { padding: [50, 50], maxZoom: 16 });
+            routeMapInstance.hasFitted = true;
         }
     });
 }
+
 
 </script>
