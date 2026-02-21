@@ -195,6 +195,7 @@
 
 <script setup>
 import { ref, computed, watch, toRaw, onMounted, shallowRef } from 'vue';
+import { VDataTable } from 'vuetify/labs/VDataTable';
 
 const props = defineProps({
     supabaseColumns: {
