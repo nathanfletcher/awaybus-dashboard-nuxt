@@ -362,7 +362,7 @@ function openEditDialog() {
             initBusStopMap('busStopEditMapNative', tableObject);
         } else if (props.supabaseTableName === 'awayBusRoutes') {
             try {
-                let rawStops = tableObject.value.busStops;
+                let rawStops = toRaw(tableObject.value.busStops);
                 let parsedStops = [];
                 if (typeof rawStops === 'string') {
                     try {
@@ -373,8 +373,11 @@ function openEditDialog() {
                             parsedStops = rawStops.replace(/[\[\]"']/g, '').split(',').map(s => s.trim());
                         }
                     }
-                } else {
+                } else if (Array.isArray(rawStops)) {
                     parsedStops = rawStops;
+                } else if (rawStops !== null && typeof rawStops === 'object') {
+                    // Sometimes Supabase returns JSONB array as a generic object with numeric keys depending on the query client
+                    parsedStops = Object.values(rawStops);
                 }
                 currentRouteStops.value = Array.isArray(parsedStops) ? [...parsedStops] : [];
                 console.log('Final parsed currentRouteStops:', currentRouteStops.value);
@@ -687,7 +690,8 @@ function updateRouteMapNative() {
                     const lat = parseFloat(parts[1]);
                     const lon = parseFloat(parts[0]);
                     if (!isNaN(lat) && !isNaN(lon)) {
-                        const isSelected = currentRouteStops.value.some(id => id == stop.osm_id);
+                        // Stringify stop.osm_id just to be absolutely sure the comparison works against our stringified array
+                        const isSelected = currentRouteStops.value.includes(String(stop.osm_id));
                         if (!isSelected) {
                             const marker = L.circleMarker([lat, lon], {
                                 radius: 5, color: '#888', fillColor: '#ccc', fillOpacity: 0.6, weight: 1
