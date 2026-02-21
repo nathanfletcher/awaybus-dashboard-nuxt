@@ -57,7 +57,7 @@
                                     <div id="routeMapNativeAdd" style="height: 400px; border: 1px solid #ccc; border-radius: 4px;"></div>
                                 </v-col>
                                 <v-col cols="3">
-                                    <h3>Route Order</h3>
+                                    <h3>Bus Stop Order</h3>
                                     <v-list height="400" style="overflow-y: auto" border class="rounded">
                                         <v-list-item v-for="(stopId, index) in currentRouteStops" :key="index">
                                             <v-list-item-title class="text-wrap">{{ getStopName(stopId) }}</v-list-item-title>
@@ -134,7 +134,7 @@
                                     <div id="routeMapNativeEdit" style="height: 400px; border: 1px solid #ccc; border-radius: 4px;"></div>
                                 </v-col>
                                 <v-col cols="3">
-                                    <h3>Route Order</h3>
+                                    <h3>Bus Stop Order</h3>
                                     <v-list height="400" style="overflow-y: auto" border class="rounded">
                                         <v-list-item v-for="(stopId, index) in currentRouteStops" :key="index">
                                             <v-list-item-title class="text-wrap">{{ getStopName(stopId) }}</v-list-item-title>
@@ -347,11 +347,16 @@ function openEditDialog() {
     if (selectedRows.value.length === 1) {
         let rowData = Object.assign({}, toRaw(selectedRows.value[0]));
         for (let key in rowData) {
-            if (typeof rowData[key] === 'object' && rowData[key] !== null) {
-                rowData[key] = JSON.stringify(rowData[key]);
-            }
+            // Do NOT stringify objects here, otherwise Vue v-models and subsequent logic will parse it as a string instead of an array!
+            // if (typeof rowData[key] === 'object' && rowData[key] !== null) {
+            //     rowData[key] = JSON.stringify(rowData[key]);
+            // }
         }
         tableObject.value = rowData;
+        console.log('--- OPEN EDIT DIALOG ---');
+        console.log('Row Data:', rowData);
+        console.log('busStops type:', typeof rowData.busStops);
+        console.log('busStops value:', rowData.busStops);
         showEditDialog.value = true;
         if (props.supabaseTableName === 'awayBusStops') {
             initBusStopMap('busStopEditMapNative', tableObject);
@@ -372,7 +377,11 @@ function openEditDialog() {
                     parsedStops = rawStops;
                 }
                 currentRouteStops.value = Array.isArray(parsedStops) ? [...parsedStops] : [];
-            } catch(e) { currentRouteStops.value = []; }
+                console.log('Final parsed currentRouteStops:', currentRouteStops.value);
+            } catch(e) { 
+                console.error('Error parsing busStops:', e);
+                currentRouteStops.value = []; 
+            }
             
             if (routeMapInstance) routeMapInstance.hasFitted = false;
             if (allStops.value.length === 0) fetchAllStops().then(() => initRouteMapNative('routeMapNativeEdit'));
