@@ -242,7 +242,7 @@ const currentRouteStops = ref([]);
 const currentEditingRoute = ref(null);
 
 // Fetch Data using Nuxt isomorphic fetching
-const { data: asyncData, pending: asyncPending, error: fetchError, refresh: refreshNuxtData } = useLazyAsyncData(
+const { data: asyncData, pending: asyncPending, error: fetchError, refresh: refreshNuxtData } = await useAsyncData(
     `fetch_${props.supabaseTableName}`,
     async () => {
         let allData = [];
@@ -264,11 +264,11 @@ const { data: asyncData, pending: asyncPending, error: fetchError, refresh: refr
             from += step;
         }
         return allData;
-    },
-    { server: false }
+    }
 );
 
 watchEffect(() => {
+    console.log('watchEffect Triggered. Pending:', asyncPending.value, 'Data:', asyncData.value);
     if (asyncData.value) {
         data.value = asyncData.value;
         if (data.value.length > 0 && Object.keys(tableObjectTemplate.value).length === 0) {
