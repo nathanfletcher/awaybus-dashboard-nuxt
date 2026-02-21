@@ -3,6 +3,12 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   ssr: true,
   modules: ['@nuxtjs/supabase','@invictus.codes/nuxt-vuetify', '@vite-pwa/nuxt'],
+  runtimeConfig: {
+    public: {
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabasePublishableKey: process.env.SUPABASE_KEY,
+    },
+  },
   pwa: {
     registerType: 'autoUpdate',
     manifest: {

@@ -13,7 +13,7 @@ if [ -f .env ]; then
     --region europe-west1 \
     --platform managed \
     --allow-unauthenticated \
-    --set-env-vars SUPABASE_URL="$SUPABASE_URL",SUPABASE_KEY="$SUPABASE_KEY" \
+    --set-env-vars SUPABASE_URL="$SUPABASE_URL",SUPABASE_KEY="$SUPABASE_KEY",SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
     --port 8080
 else
   echo "⚠️  No .env file found. Deploying with existing environment variables."
