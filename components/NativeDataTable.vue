@@ -522,7 +522,7 @@ function updateBusStopMapFromInput() {
 // CRUD Operations
 async function createSupabaseRow() {
     let payload = Object.assign({}, toRaw(tableObjectTemplate.value));
-    if (props.supabaseTableName === 'awayBusRoutes') payload.busStops = currentRouteStops.value;
+    if (props.supabaseTableName === 'awayBusRoutes') payload.busStops = { stops: currentRouteStops.value };
     let finalPayload = {};
     for (let key in payload) {
         if (payload[key] === '' || payload[key] === null || payload[key] === undefined) continue;
@@ -548,7 +548,7 @@ async function createSupabaseRow() {
 
 async function editSupabaseRow() {
     let payload = Object.assign({}, toRaw(tableObject.value));
-    if (props.supabaseTableName === 'awayBusRoutes') payload.busStops = currentRouteStops.value;
+    if (props.supabaseTableName === 'awayBusRoutes') payload.busStops = { stops: currentRouteStops.value };
     let finalPayload = {};
     for (let key in payload) {
         if (payload[key] === '' || payload[key] === null || payload[key] === undefined) continue;
