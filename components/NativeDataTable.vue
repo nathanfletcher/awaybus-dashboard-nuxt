@@ -368,7 +368,17 @@ function openEditDialog() {
                     if (rawStops.startsWith('[') || rawStops.startsWith('{')) {
                         let inner = JSON.parse(rawStops);
                         if (typeof inner === 'string') inner = JSON.parse(inner);
-                        parsedStops = inner;
+                        
+                        // NEW FIX: If the parsed JSON is actually an object containing a 'stops' array, extract it!
+                        if (inner && typeof inner === 'object' && !Array.isArray(inner)) {
+                            if (Array.isArray(inner.stops)) {
+                                parsedStops = inner.stops;
+                            } else {
+                                parsedStops = Object.values(inner);
+                            }
+                        } else {
+                            parsedStops = inner;
+                        }
                     } else if (rawStops.includes(',')) {
                         parsedStops = rawStops.replace(/[\[\]\"']/g, '').split(',').map(s => s.trim());
                     }
