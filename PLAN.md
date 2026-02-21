@@ -4,17 +4,32 @@
 Provide administrators with a robust, web-based tool to manage the transit network's master data (Stops, Routes, Drivers, Users) using Nuxt 3 and Vuetify.
 
 ## Tasks
-1. **Data Fetching Fixes:**
+1. **[DONE] Data Fetching Fixes:**
    - The current implementation uses DataTables.net within Vue components. The usage of `useAsyncData` and `useFetch` was noted as incorrect or causing missing network activity.
    - Refactor the data fetching in `DataTableJs.vue` to properly leverage Nuxt 3's isomorphic fetching (`useAsyncData` with the `@nuxtjs/supabase` client) so data loads correctly on the server and hydrates on the client without double-fetching or hanging.
 
-2. **Authentication Middleware:**
+2. **[DONE] Authentication Middleware:**
    - Ensure `middleware/auth.js` securely protects all routes except `/login` and `/forgot-password`. 
    - Confirm that expiring sessions correctly redirect users back to the login page.
 
-3. **Data Integrity & UI Polish:**
+3. **[DONE] Data Integrity & UI Polish:**
    - Ensure the JSON fields in `awayBusRoutes` (specifically the `busStops` array) can be viewed and edited without breaking the application.
    - Add basic form validation to the "Add" and "Edit" dialogs in `DataTableJs.vue` to prevent saving empty strings or null values where they are not permitted.
+
+4. **[DONE] Interactive Route Builder & Map:**
+   - Instead of manually typing JSON IDs, implemented a "Route Builder" modal.
+   - Administrators can search for stops and add them to a route in a specific order (using up/down buttons).
+   - Integrated **Leaflet** to render a live map in the center of the modal. As stops are added or reordered, the map dynamically plots markers (start = green, end = red, middle = blue) and draws a polyline connecting the route for visual confirmation.
+
+5. **[DONE] Interactive Bus Stop Editor:**
+   - Integrated an interactive Leaflet map directly into the "Add Bus Stop" and "Edit Bus Stop" dialogs.
+   - Administrators can visually verify the location of a stop.
+   - Clicking on the map or dragging the marker automatically populates the `coordinates` text field with precise latitude and longitude.
+   - Conversely, typing coordinates into the text field instantly updates the marker position on the map.
+
+6. **[DONE] Driver Management Enhancements:**
+   - Add a one-click "Verify Driver" button to the Drivers table to streamline the registration approval process.
+   - Display a human-readable status for verification instead of just true/false.
 
 ---
 

@@ -1,55 +1,37 @@
 <template>
-  <v-card>
-    <v-layout>
-      <!-- <v-system-bar color="deep-purple darken-3"></v-system-bar> -->
+  <v-app>
+    <v-navigation-drawer
+      v-model="drawer"
+      color="primary"
+      theme="dark"
+      app
+    >
+      <div class="d-flex align-center pa-4 mb-4">
+        <v-icon icon="mdi-bus" size="32" class="mr-3"></v-icon>
+        <div class="text-h6 font-weight-bold">AwayBus</div>
+      </div>
+      <v-divider></v-divider>
+      <NavigationList/>
+    </v-navigation-drawer>
 
-      <v-app-bar
-        color="primary"
-        prominent
-        absolute=""
-      >
-        <v-app-bar-nav-icon variant="text" @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
+    <v-app-bar elevation="1" app color="surface">
+      <v-app-bar-nav-icon variant="text" @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
+      <v-app-bar-title class="font-weight-medium">Station Master</v-app-bar-title>
+      <v-spacer></v-spacer>
+      <v-btn icon="mdi-bell-outline" variant="text"></v-btn>
+      <v-btn icon="mdi-account-circle" variant="text"></v-btn>
+    </v-app-bar>
 
-        <v-toolbar-title @click="navigateTo('/')">Away Bus</v-toolbar-title>
-
-        <v-spacer></v-spacer>
-
-        <v-btn variant="text" icon="mdi-magnify"></v-btn>
-
-        <v-btn variant="text" icon="mdi-filter"></v-btn>
-
-        <v-btn variant="text" icon="mdi-dots-vertical"></v-btn>
-      </v-app-bar>
-
-      <v-navigation-drawer
-        v-model="drawer"
-        location="left"
-        temporary
-      >
-        <NavigationList/>
-
-      </v-navigation-drawer>
-
-      <v-main >
-        <v-container>
+    <v-main class="bg-grey-lighten-4">
+      <v-container fluid class="pa-6">
         <slot/>
       </v-container>
-      </v-main>
-    </v-layout>
-  </v-card>
+    </v-main>
+  </v-app>
 </template>
-<script>
-  export default {
-    data: () => ({
-      drawer: false,
-      group: null,
-      
-    }),
 
-    watch: {
-      group () {
-        this.drawer = false
-      },
-    },
-  }
+<script setup>
+import { ref } from 'vue';
+
+const drawer = ref(true);
 </script>

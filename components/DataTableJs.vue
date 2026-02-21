@@ -184,8 +184,8 @@
     const loading = ref(false)
     const queryColumns = props.supabaseColumns
     let selectedRows = ref([])
-    let tableObject = toRaw({});
-    let tableObjectTemplate=reactive({});
+    let tableObject = ref({});
+    let tableObjectTemplate = ref({});
     let showEditDialog = ref(false);
     let showDeleteDialog = ref(false);
     let showAddDialog = ref(false);
@@ -197,9 +197,8 @@
     //const dataTable = this.$refs.table.dt; // This variable is used in the `ref` attribute for the component
     
     onMounted(function () {
-        dt = table.value.dt;
-        buttons = dt.buttons( ['.edit', '.delete'] );
-        //dt.buttons().disable();
+        dt = markRaw(table.value.dt);
+        buttons = markRaw(dt.buttons( ['.edit', '.delete'] ));
         selectCallback()
         /* this.$refs.table.dt()
         .on( 'select', function ( e, dt, type, indexes ) {
@@ -220,10 +219,10 @@
     })
     
     if (data.value && data.value.length > 0) {
-        tableObjectTemplate = clearObject(Object.assign({}, toRaw(data.value[0])))
-        // delete id key from tableObjectTemplate
-        delete tableObjectTemplate[props.supabaseTableId]
-        delete tableObjectTemplate["created_at"]
+        let tmpl = clearObject(Object.assign({}, toRaw(data.value[0])))
+        delete tmpl[props.supabaseTableId]
+        delete tmpl["created_at"]
+        tableObjectTemplate.value = tmpl;
     }
 
     // generate modal form if data has content
@@ -352,102 +351,123 @@
       console.log(dt.rows({ selected: true }).data()); 
       dt.rows({ selected: true }).every(function () {
             let idx = data.value.indexOf(this.data());
-            data.value.splice(idx, 1);
+            if (idx !== -1) data.value.splice(idx, 1);
+            data.value = [...data.value];
+                data.value = [...data.value]; // trigger shallowRef update
+                if (dt) dt.row(idx).remove().draw(false);
         });
       /* this.editor
         .title('Add new record')
         .buttons('Save')
         .create(); */
     }
-    function selectCallback(data, type, selected) {
-        //console.log(type)
-        console.log(); 
-        console.log(toRaw(dt.rows({ selected: true }).data().toArray()[0]))//
-        selectedRows.value = toRaw(dt.rows({ selected: true }).data().toArray());
-        tableObject = toRaw(dt.rows({ selected: true }).data().toArray()[0]);
-        
-        //dt.buttons().disable();
-        //console.log(selectedRows)
- 
-        if ( selectedRows.length > 0 ) {
+    function selectCallback(e, dtInstance, type, indexes) {
+        if (!dt) return;
+        const selectedData = dt.rows({ selected: true }).data().toArray();
+        selectedRows.value = selectedData;
+        if (selectedData.length > 0) {
+            let rowData = Object.assign({}, toRaw(selectedData[0]));
+            for (let key in rowData) {
+                if (typeof rowData[key] === 'object' && rowData[key] !== null) {
+                    rowData[key] = JSON.stringify(rowData[key]);
+                }
+            }
+            tableObject.value = rowData;
             dt.buttons().enable();
-            console.log(selectedRows[0].created_at)
-        }
-        else {
+        } else {
+            tableObject.value = {};
             dt.buttons().disable();
         }
-
     }
     async function createSupabaseRow(){
-        let payload = toRaw(tableObjectTemplate);
-        // remove any payload keys that are empty
-        for (var key in payload) {
-            if (payload.hasOwnProperty(key)) {
-                if(payload[key] == ''){
-                    delete payload[key];
+        let payload = Object.assign({}, toRaw(tableObjectTemplate.value));
+        let finalPayload = {};
+        for (let key in payload) {
+            if (payload[key] === '' || payload[key] === null || payload[key] === undefined) {
+                continue;
+            }
+            if (typeof payload[key] === 'string' && (payload[key].startsWith('[') || payload[key].startsWith('{'))) {
+                try {
+                    finalPayload[key] = JSON.parse(payload[key]);
+                } catch(e) {
+                    finalPayload[key] = payload[key];
                 }
+            } else {
+                finalPayload[key] = payload[key];
             }
         }
 
-        const { data, error } = await client
+        const { data: insertedData, error } = await client
         .from(props.supabaseTableName)
-        .insert(
-            payload
-        )
+        .insert(finalPayload)
         .select()
         if (error) {
             console.log(error)
         }
         else {
-            console.log(data)
-            //selectedRows.value[0] = data;
-            // update dt row
-            dt.row.add(data[0]).draw();
-            clearObject(tableObjectTemplate.value)
+            data.value.push(insertedData[0]);
+            let tmpl = clearObject(Object.assign({}, toRaw(tableObjectTemplate.value)));
+            tableObjectTemplate.value = tmpl;
             showAddDialog.value = false;
-            return data;
+            return insertedData;
         }
-        
     }
 
     async function editSupabaseRow(){
-        console.log(tableObject.name)
-        //let selectedRows = dt.rows({ selected: true }).data().toArray();
-        const { data, error } = await client
+        let payload = Object.assign({}, toRaw(tableObject.value));
+        let finalPayload = {};
+        for (let key in payload) {
+            if (payload[key] === '' || payload[key] === null || payload[key] === undefined) {
+                continue;
+            }
+            if (typeof payload[key] === 'string' && (payload[key].startsWith('[') || payload[key].startsWith('{'))) {
+                try {
+                    finalPayload[key] = JSON.parse(payload[key]);
+                } catch(e) {
+                    finalPayload[key] = payload[key];
+                }
+            } else {
+                finalPayload[key] = payload[key];
+            }
+        }
+
+        const { data: updatedData, error } = await client
         .from(props.supabaseTableName)
-        .upsert(tableObject)
+        .upsert(finalPayload)
         .select()
-        selectedRows.value[0] = data;
+        
         if (error) {
             console.log(error)
         }
         else {
-            console.log(data)
-            selectedRows = data;
+            const updatedId = updatedData[0][props.supabaseTableId];
+            const idx = data.value.findIndex(item => item[props.supabaseTableId] === updatedId);
+            if (idx !== -1) {
+                data.value[idx] = updatedData[0];
+            }
+            selectedRows.value = [updatedData[0]];
             showEditDialog.value = false;
-            // update dt row
-            dt.row({ selected: true }).data(data[0]);
-            return data;
+            return updatedData;
         }
-        
     }
     async function deleteSupabaseRows(){
-            //console.log(selectedRows.value[0][props.supabaseTableId])
-            console.log("Starting deletion process",selectedRows.value[0][props.supabaseTableId])
-            const { error } = await client
-            .from(props.supabaseTableName)
-            .delete()
-            .eq(props.supabaseTableId, selectedRows.value[0][props.supabaseTableId])
-            if (error) {
-                console.log(error)
+        const deletedId = selectedRows.value[0][props.supabaseTableId];
+        const { error } = await client
+        .from(props.supabaseTableName)
+        .delete()
+        .eq(props.supabaseTableId, deletedId)
+        
+        if (error) {
+            console.log(error)
+        }
+        else {
+            const idx = data.value.findIndex(item => item[props.supabaseTableId] === deletedId);
+            if (idx !== -1) {
+                data.value.splice(idx, 1);
             }
-            else {
-                console.log('deleted')
-                // update dt
-                dt.rows({ selected: true }).remove().draw();
-                // dismiss dialog
-                showDeleteDialog.value = false;
-            }     
+            showDeleteDialog.value = false;
+            selectedRows.value = [];
+        }     
     }
 
     // return true if json keys contain 'id'
