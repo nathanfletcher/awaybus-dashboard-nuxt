@@ -17,6 +17,7 @@
     <v-app-bar elevation="1" app color="surface">
       <v-app-bar-nav-icon variant="text" @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <v-app-bar-title class="font-weight-medium">Station Master</v-app-bar-title>
+      <VitePwaManifest />
       <v-spacer></v-spacer>
       <v-btn icon="mdi-bell-outline" variant="text"></v-btn>
       <v-btn icon="mdi-account-circle" variant="text"></v-btn>
