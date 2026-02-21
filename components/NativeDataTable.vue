@@ -181,7 +181,13 @@
             density="comfortable"
             class="border rounded"
             :items-per-page="50"
-            :items-per-page-options="[10, 50, 100, 300, 500]"
+            :items-per-page-options="[
+                { value: 10, title: '10' },
+                { value: 50, title: '50' },
+                { value: 100, title: '100' },
+                { value: 300, title: '300' },
+                { value: 500, title: '500' }
+            ]"
         >
             <template v-slot:item.actions="{ item }">
                 <v-btn v-if="props.supabaseTableName === 'awayBusDrivers' && !item.isVerified" 
