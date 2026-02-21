@@ -377,7 +377,12 @@ function openEditDialog() {
                 } else if (rawStops !== null && typeof rawStops === 'object') {
                     parsedStops = Object.values(rawStops);
                 }
-                currentRouteStops.value = Array.isArray(parsedStops) ? [...parsedStops].filter(Boolean).map(String) : [];
+                
+                // Force array of strings for strict map matching and clean list rendering
+                const cleanArray = Array.isArray(parsedStops) ? [...parsedStops].filter(Boolean).map(String) : [];
+                currentRouteStops.value = cleanArray;
+                tableObject.value.busStops = cleanArray; // OVERWRITE tableObject string so UI doesn't choke on a stringified object!
+                
                 console.log('Final parsed currentRouteStops:', currentRouteStops.value);
             } catch(e) {
                 console.error('Error parsing busStops:', e);
@@ -689,6 +694,9 @@ function updateRouteMapNative() {
                     if (!isNaN(lat) && !isNaN(lon)) {
                         // Stringify stop.osm_id just to be absolutely sure the comparison works against our stringified array
                         const isSelected = currentRouteStops.value.includes(String(stop.osm_id));
+                        if (isSelected) {
+                            console.log('Map Match Found! Plotting:', stop.osm_id, 'at index', index);
+                        }
                         if (!isSelected) {
                             const marker = L.circleMarker([lat, lon], {
                                 radius: 5, color: '#888', fillColor: '#ccc', fillOpacity: 0.6, weight: 1
