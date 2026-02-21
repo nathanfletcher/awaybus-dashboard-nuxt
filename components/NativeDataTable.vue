@@ -225,7 +225,7 @@ const showDeleteDialog = ref(false);
 const showRouteBuilder = ref(false);
 
 const data = shallowRef([]);
-const pending = ref(false);
+const pending = ref(true);
 
 // Map instances
 let busStopMapInstance = null;
@@ -240,41 +240,50 @@ const allStops = ref([]);
 const currentRouteStops = ref([]);
 const currentEditingRoute = ref(null);
 
-// Fetch Data
-const refreshData = async () => {
-    pending.value = true;
-    selectedRows.value = [];
-    
-    let allData = [];
-    let from = 0;
-    let step = 1000;
-    while (true) {
-        const { data: pageData, error } = await client.from(props.supabaseTableName).select(props.supabaseColumns).range(from, from + step - 1);
-        if (error) {
-            console.error("Error fetching data:", error);
-            break;
+// Fetch Data using Nuxt isomorphic fetching
+const { data: asyncData, pending: asyncPending, error: fetchError, refresh: refreshNuxtData } = await useAsyncData(
+    `fetch_${props.supabaseTableName}`,
+    async () => {
+        let allData = [];
+        let from = 0;
+        let step = 1000;
+        while (true) {
+            const { data: pageData, error } = await client
+                .from(props.supabaseTableName)
+                .select(props.supabaseColumns)
+                .range(from, from + step - 1);
+            if (error) {
+                console.error("Error fetching data:", error);
+                throw error;
+            }
+            if (!pageData || pageData.length === 0) break;
+            
+            allData.push(...pageData);
+            if (pageData.length < step) break;
+            from += step;
         }
-        if (!pageData || pageData.length === 0) break;
-        
-        allData.push(...pageData);
-        if (pageData.length < step) break;
-        from += step;
-    }
-    
-    data.value = allData;
-    
-    if (data.value && data.value.length > 0 && Object.keys(tableObjectTemplate.value).length === 0) {
-        let tmpl = clearObject(Object.assign({}, toRaw(data.value[0])));
-        delete tmpl[props.supabaseTableId];
-        delete tmpl["created_at"];
-        tableObjectTemplate.value = tmpl;
-    }
-    pending.value = false;
-};
+        return allData;
+    },
+    { server: false }
+);
 
-onMounted(() => {
-    refreshData();
+watchEffect(() => {
+    if (asyncData.value) {
+        data.value = asyncData.value;
+        if (data.value.length > 0 && Object.keys(tableObjectTemplate.value).length === 0) {
+            let tmpl = clearObject(Object.assign({}, toRaw(data.value[0])));
+            delete tmpl[props.supabaseTableId];
+            delete tmpl["created_at"];
+            tableObjectTemplate.value = tmpl;
+        }
+    }
+    pending.value = asyncPending.value;
 });
+
+const refreshData = async () => {
+    selectedRows.value = [];
+    await refreshNuxtData();
+};
 
 // Headers
 const computedHeaders = computed(() => {
