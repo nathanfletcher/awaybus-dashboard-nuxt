@@ -362,29 +362,27 @@ function openEditDialog() {
             initBusStopMap('busStopEditMapNative', tableObject);
         } else if (props.supabaseTableName === 'awayBusRoutes') {
                         try {
-                            let rawStops = tableObject.value.busStops;
-                            let parsedStops = [];
-                            if (typeof rawStops === 'string') {
-                                try {
-                                    parsedStops = JSON.parse(rawStops);
-                                    if (typeof parsedStops === 'string') parsedStops = JSON.parse(parsedStops);
-                                } catch(e) {
-                                    if (rawStops.includes(',')) {
-                                        parsedStops = rawStops.replace(/[\[\]"']/g, '').split(',').map(s => s.trim());
-                                    }
-                                }
-                            } else if (Array.isArray(rawStops)) {
-                                parsedStops = rawStops;
-                            } else if (rawStops !== null && typeof rawStops === 'object') {
-                                // Sometimes Supabase returns JSONB array as a generic object with numeric keys depending on the query client
-                                parsedStops = Object.values(rawStops);
-                            }
-                            currentRouteStops.value = Array.isArray(parsedStops) ? [...parsedStops].map(String) : [];
-                            console.log('Final parsed currentRouteStops:', currentRouteStops.value);
-                        } catch(e) {
-                            console.error('Error parsing busStops:', e);
-                            currentRouteStops.value = [];
-                        }            
+                let rawStops = toRaw(tableObject.value.busStops);
+                let parsedStops = [];
+                if (typeof rawStops === 'string') {
+                    if (rawStops.startsWith('[') || rawStops.startsWith('{')) {
+                        let inner = JSON.parse(rawStops);
+                        if (typeof inner === 'string') inner = JSON.parse(inner);
+                        parsedStops = inner;
+                    } else if (rawStops.includes(',')) {
+                        parsedStops = rawStops.replace(/[\[\]\"']/g, '').split(',').map(s => s.trim());
+                    }
+                } else if (Array.isArray(rawStops)) {
+                    parsedStops = rawStops;
+                } else if (rawStops !== null && typeof rawStops === 'object') {
+                    parsedStops = Object.values(rawStops);
+                }
+                currentRouteStops.value = Array.isArray(parsedStops) ? [...parsedStops].filter(Boolean).map(String) : [];
+                console.log('Final parsed currentRouteStops:', currentRouteStops.value);
+            } catch(e) {
+                console.error('Error parsing busStops:', e);
+                currentRouteStops.value = [];
+            }            
             if (routeMapInstance) routeMapInstance.hasFitted = false;
             if (allStops.value.length === 0) fetchAllStops().then(() => initRouteMapNative('routeMapNativeEdit'));
             else setTimeout(() => initRouteMapNative('routeMapNativeEdit'), 300);
