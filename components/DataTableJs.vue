@@ -115,6 +115,7 @@
             scrollCollapse: true,
             scrollY: 'calc(100vh - 300px)',
             dom: 'Bftip',
+            order: [],
             }"
         >  
             <thead>
@@ -237,12 +238,16 @@
     //drivers.value = getNextBatchOfDrivers({ page: currentPage.value, itemsPerPage: 5, sortBy: 'id' })
     //Get Table Headers from first row of data
     if(props.tableHeaders != undefined){
-        localTableHeaders.value = props.tableHeaders
+        const headers = [...props.tableHeaders];
+        headers.push({ data: null, title: "Actions", orderable: false, defaultContent: "", render: "#column-actions" });
+        localTableHeaders.value = headers;
     }
     else if (data.value && data.value.length > 0) {
-        localTableHeaders.value = getTableHeaders(toRaw(data.value[0]));
+        const headers = getTableHeaders(toRaw(data.value[0]));
+        headers.push({ data: null, title: "Actions", orderable: false, defaultContent: "", render: "#column-actions" });
+        localTableHeaders.value = headers;
     } else {
-        localTableHeaders.value = [];
+        localTableHeaders.value = [{ data: null, title: "Actions", orderable: false, defaultContent: "", render: "#column-actions" }];
     }
     //tableHeaders.value = getTableHeaders(toRaw(data.value[0]));
 
