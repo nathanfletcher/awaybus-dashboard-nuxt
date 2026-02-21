@@ -357,9 +357,23 @@ function openEditDialog() {
             initBusStopMap('busStopEditMapNative', tableObject);
         } else if (props.supabaseTableName === 'awayBusRoutes') {
             try {
-                const stops = typeof tableObject.value.busStops === 'string' ? JSON.parse(tableObject.value.busStops) : tableObject.value.busStops;
-                currentRouteStops.value = Array.isArray(stops) ? [...stops] : [];
+                let rawStops = tableObject.value.busStops;
+                let parsedStops = [];
+                if (typeof rawStops === 'string') {
+                    try {
+                        parsedStops = JSON.parse(rawStops);
+                        if (typeof parsedStops === 'string') parsedStops = JSON.parse(parsedStops);
+                    } catch(e) {
+                        if (rawStops.includes(',')) {
+                            parsedStops = rawStops.replace(/[\[\]"']/g, '').split(',').map(s => s.trim());
+                        }
+                    }
+                } else {
+                    parsedStops = rawStops;
+                }
+                currentRouteStops.value = Array.isArray(parsedStops) ? [...parsedStops] : [];
             } catch(e) { currentRouteStops.value = []; }
+            
             if (routeMapInstance) routeMapInstance.hasFitted = false;
             if (allStops.value.length === 0) fetchAllStops().then(() => initRouteMapNative('routeMapNativeEdit'));
             else setTimeout(() => initRouteMapNative('routeMapNativeEdit'), 300);
@@ -597,8 +611,17 @@ const filteredStops = computed(() => {
 });
 
 async function fetchAllStops() {
-    const { data: stops } = await client.from('awayBusStops').select('osm_id, Name, coordinates').limit(5000);
-    allStops.value = stops || [];
+    let stopsData = [];
+    let from = 0;
+    let step = 1000;
+    while (true) {
+        const { data: page, error } = await client.from('awayBusStops').select('osm_id, Name, coordinates').range(from, from + step - 1);
+        if (error || !page || page.length === 0) break;
+        stopsData.push(...page);
+        if (page.length < step) break;
+        from += step;
+    }
+    allStops.value = stopsData;
 }
 
 function getStopName(id) {
@@ -655,7 +678,7 @@ function updateRouteMapNative() {
                     const lat = parseFloat(parts[1]);
                     const lon = parseFloat(parts[0]);
                     if (!isNaN(lat) && !isNaN(lon)) {
-                        const isSelected = currentRouteStops.value.includes(stop.osm_id);
+                        const isSelected = currentRouteStops.value.some(id => id == stop.osm_id);
                         if (!isSelected) {
                             const marker = L.circleMarker([lat, lon], {
                                 radius: 5, color: '#888', fillColor: '#ccc', fillOpacity: 0.6, weight: 1
