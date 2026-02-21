@@ -1,31 +1,49 @@
 <template>
-    <div >
-      <v-container>
-        <v-row>
-            <v-col></v-col>
-            <v-col>
-                <h1>Station Master</h1>
-                <h3 >Forgot password</h3>
+    <div class="d-flex align-center justify-center fill-height bg-grey-lighten-4" style="min-height: 100vh;">
+        <v-card width="100%" max-width="450" class="pa-6 rounded-xl" elevation="4">
+            <div class="text-center mb-6">
+                <v-icon icon="mdi-bus" size="48" color="primary" class="mb-2"></v-icon>
+                <h1 class="text-h4 font-weight-bold text-primary">AwayBus</h1>
+                <p class="text-subtitle-1 text-medium-emphasis">Station Master Dashboard</p>
+            </div>
+
+            <v-card-text>
+                <h3 class="text-h6 font-weight-medium mb-4 text-center">Reset your password</h3>
                 <form @submit.prevent="resetPassword">
-                    <ErrorAlert :error-msg="authError" @clearError="clearError" />
-                    <SuccessAlert :success-msg="authSuccess" @clearSuccess="clearSuccess" />
-                    <div >
-                    <label >
-                        <div >
-                        <v-text-field type="text" placeholder="Email address" v-model="email"></v-text-field>
-                        </div>
-                    </label>
-                    </div>
-                    <v-btn type="submit" :disabled="loading">
-                     <div :class="{loading: loading}">Request password reset</div>
+                    <ErrorAlert v-if="authError" :error-msg="authError" @clearError="clearError" class="mb-4" />
+                    <SuccessAlert v-if="authSuccess" :success-msg="authSuccess" @clearSuccess="clearSuccess" class="mb-4" />
+
+                    <v-text-field 
+                        type="email" 
+                        label="Email address" 
+                        v-model="email"
+                        prepend-inner-icon="mdi-email-outline"
+                        variant="outlined"
+                        color="primary"
+                        required
+                    ></v-text-field>
+
+                    <v-btn 
+                        type="submit" 
+                        color="primary" 
+                        size="large" 
+                        block 
+                        class="mt-2 mb-4"
+                        :loading="loading"
+                    >
+                        Request password reset
                     </v-btn>
+                    
+                    <div class="text-center">
+                        <NuxtLink to="/login" class="text-decoration-none text-medium-emphasis">
+                            <v-icon icon="mdi-arrow-left" size="small" class="mr-1"></v-icon> Back to login
+                        </NuxtLink>
+                    </div>
                 </form>
-            </v-col>
-            <v-col></v-col>
-        </v-row>
-      </v-container>
+            </v-card-text>
+        </v-card>
     </div>
-  </template>
+</template>
   
   <script setup >
   definePageMeta({

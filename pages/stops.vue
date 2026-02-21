@@ -1,10 +1,5 @@
 <template>
     <div>
-        <v-row class="mb-4">
-            <v-col>
-                <h1>Getting all Bus Stops</h1>
-            </v-col>
-        </v-row>
         <ClientOnly>
             <DataTableJs
             :supabase-table-name=table

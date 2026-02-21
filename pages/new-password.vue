@@ -1,30 +1,53 @@
 <template>
-    <v-container>
-        <v-col> </v-col>
-        <v-col>
-            <div >
-                <h1>Station Master</h1>
-      <h3 >New password</h3>
-      <form @submit.prevent="updatepassword">
-        <ErrorAlert :error-msg="authError" @clearError="clearError" />
-        <SuccessAlert :success-msg="authSuccess" @clearSuccess="clearSuccess" />
-        
-              <v-text-field type="password" label="Password" v-model="password" ></v-text-field>
-            
-              <v-text-field type="password" label="Repeat Password" v-model="passwordConfirm" ></v-text-field>
-        
-        <div >
-          <v-btn type="submit" :disabled="loading">
-            <div :class="{loading: loading}">Save</div>
-            
-          </v-btn>
-        </div>
-      </form>
+    <div class="d-flex align-center justify-center fill-height bg-grey-lighten-4" style="min-height: 100vh;">
+        <v-card width="100%" max-width="450" class="pa-6 rounded-xl" elevation="4">
+            <div class="text-center mb-6">
+                <v-icon icon="mdi-bus" size="48" color="primary" class="mb-2"></v-icon>
+                <h1 class="text-h4 font-weight-bold text-primary">AwayBus</h1>
+                <p class="text-subtitle-1 text-medium-emphasis">Station Master Dashboard</p>
+            </div>
+
+            <v-card-text>
+                <h3 class="text-h6 font-weight-medium mb-4 text-center">Set your new password</h3>
+                <form @submit.prevent="updatepassword">
+                    <ErrorAlert v-if="authError" :error-msg="authError" @clearError="clearError" class="mb-4" />
+                    <SuccessAlert v-if="authSuccess" :success-msg="authSuccess" @clearSuccess="clearSuccess" class="mb-4" />
+                    
+                    <v-text-field 
+                        type="password" 
+                        label="New Password" 
+                        v-model="password"
+                        prepend-inner-icon="mdi-lock-outline"
+                        variant="outlined"
+                        color="primary"
+                        required
+                    ></v-text-field>
+                    
+                    <v-text-field 
+                        type="password" 
+                        label="Confirm Password" 
+                        v-model="passwordConfirm"
+                        prepend-inner-icon="mdi-lock-check-outline"
+                        variant="outlined"
+                        color="primary"
+                        required
+                    ></v-text-field>
+                    
+                    <v-btn 
+                        type="submit" 
+                        color="primary" 
+                        size="large" 
+                        block 
+                        class="mt-2"
+                        :loading="loading"
+                    >
+                        Save new password
+                    </v-btn>
+                </form>
+            </v-card-text>
+        </v-card>
     </div>
-        </v-col>
-        <v-col></v-col>
-    </v-container>
-  </template>
+</template>
   
   <script setup >
   definePageMeta({

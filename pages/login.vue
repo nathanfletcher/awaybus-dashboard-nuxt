@@ -1,34 +1,54 @@
 <template>
-    <div>
-        <v-container>
-            <v-row no-gutters>
-                <v-col></v-col>
-                <v-col>
-                    <h1>Station Master</h1>
-                    <v-sheet class="ma-2 pa-2">
-                        <div>
-                            <h3>Sign in</h3>
-                            <form @submit.prevent="login">
-                                <ErrorAlert :error-msg="authError" @clearError="clearError" />
+    <div class="d-flex align-center justify-center fill-height bg-grey-lighten-4" style="min-height: 100vh;">
+        <v-card width="100%" max-width="450" class="pa-6 rounded-xl" elevation="4">
+            <div class="text-center mb-6">
+                <v-icon icon="mdi-bus" size="48" color="primary" class="mb-2"></v-icon>
+                <h1 class="text-h4 font-weight-bold text-primary">AwayBus</h1>
+                <p class="text-subtitle-1 text-medium-emphasis">Station Master Dashboard</p>
+            </div>
 
-                                <v-text-field type="text" label="Email address" v-model="email"></v-text-field>
-                                <v-text-field type="password" label="Password"
-                                    v-model="password"></v-text-field>
+            <v-card-text>
+                <h3 class="text-h6 font-weight-medium mb-4 text-center">Sign in to your account</h3>
+                <form @submit.prevent="login">
+                    <ErrorAlert v-if="authError" :error-msg="authError" @clearError="clearError" class="mb-4" />
 
-                                <div>
-                                    <v-btn type="submit" :disabled="loading" >
-                                        <div :class="{ loading: loading }">Sign in</div>
-                                    </v-btn>
-                                    <br />
-                                    <NuxtLink to="/forgot-password" class="me-4">Forgot your password?</NuxtLink>
-                                </div>
-                            </form>
-                        </div>
-                    </v-sheet>
-                </v-col>
-                <v-col></v-col>
-            </v-row>
-        </v-container>
+                    <v-text-field 
+                        type="email" 
+                        label="Email address" 
+                        v-model="email"
+                        prepend-inner-icon="mdi-email-outline"
+                        variant="outlined"
+                        color="primary"
+                        required
+                    ></v-text-field>
+
+                    <v-text-field 
+                        type="password" 
+                        label="Password"
+                        v-model="password"
+                        prepend-inner-icon="mdi-lock-outline"
+                        variant="outlined"
+                        color="primary"
+                        required
+                    ></v-text-field>
+
+                    <v-btn 
+                        type="submit" 
+                        color="primary" 
+                        size="large" 
+                        block 
+                        class="mt-2 mb-4"
+                        :loading="loading"
+                    >
+                        Sign in
+                    </v-btn>
+                    
+                    <div class="text-center">
+                        <NuxtLink to="/forgot-password" class="text-decoration-none text-primary">Forgot your password?</NuxtLink>
+                    </div>
+                </form>
+            </v-card-text>
+        </v-card>
     </div>
 </template>
 

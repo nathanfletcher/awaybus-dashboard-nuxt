@@ -1,9 +1,9 @@
 <template>
-    <div id="supabaseTable">
-        <div class="controlPanel">
-            <v-row>
-                <v-col cols="auto">
-                    <v-dialog width="auto" v-model=showAddDialog>
+    <v-card elevation="2" class="pa-4 rounded-lg">
+        <div class="d-flex align-center justify-space-between mb-4">
+            <h2 class="text-h5 font-weight-bold text-capitalize">{{ props.supabaseTableName.replace('awayBus', '') }} Management</h2>
+            <div class="d-flex gap-2">
+                <v-dialog width="auto" v-model=showAddDialog>
                         <template v-slot:activator="{ props }">
                         <v-btn color="primary" v-bind="props">Add {{ props.tableName }}</v-btn>
                         </template>
@@ -34,10 +34,8 @@
                         </v-card>
                         </template>
                     </v-dialog>
-                </v-col>
 
-                <v-col cols="auto">
-                    <v-dialog width="auto" v-model=showEditDialog>
+                <v-dialog width="auto" v-model=showEditDialog>
                         <template v-slot:activator="{ props }">
                         <v-btn color="primary" v-bind="props" :disabled="selectedRows.length!=1 ">Edit</v-btn>
                         </template>
@@ -68,10 +66,8 @@
                         </v-card>
                         </template>
                     </v-dialog>
-                </v-col>
 
-                <v-col cols="auto">
-                    <v-dialog transition="dialog-top-transition" width="auto" v-model="showDeleteDialog">
+                <v-dialog transition="dialog-top-transition" width="auto" v-model="showDeleteDialog">
                         <template v-slot:activator="{ props }">
                         <v-btn color="warning" v-bind="props" :disabled="!selectedRows.length>0">Delete</v-btn>
                         </template>
@@ -102,8 +98,7 @@
                         </v-card>
                         </template>
                     </v-dialog>
-                </v-col>
-            </v-row>
+            </div>
         </div>
         <DataTable :columns="localTableHeaders" 
         :data="data" 
@@ -130,7 +125,7 @@
                 </tr>
             </thead>
         </DataTable>
-    </div>
+    </v-card>
 </template>
 <script setup>
     import DataTablesCore from 'datatables.net';
