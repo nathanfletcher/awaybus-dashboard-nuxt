@@ -13,7 +13,7 @@
     "@nuxt/devtools": "latest",
     "@nuxtjs/supabase": "^0.3.8",
     "@types/node": "^18.16.19",
-    "nuxt": "^3.6.2"
+    "nuxt": "^3.10.0"
   },
   "dependencies": {
     "@invictus.codes/nuxt-vuetify": "^0.3.0",

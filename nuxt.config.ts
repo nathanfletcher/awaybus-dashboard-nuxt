@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
-      supabasePublishableKey: process.env.SUPABASE_KEY,
+      supabaseKey: process.env.SUPABASE_KEY,
     },
   },
   pwa: {
