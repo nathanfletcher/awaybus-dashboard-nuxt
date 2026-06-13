@@ -8,6 +8,7 @@
       :title="item.title"
       link
       exact
+      active-class="v-list-item--active bg-primary-darken-1"
     ></v-list-item>
   </v-list>
 </template>
@@ -24,6 +25,7 @@ const items = ref([
   { title: 'Staff', value: '/staff', icon: 'mdi-shield-account' },
   { title: 'Cities', value: '/cities', icon: 'mdi-city' },
   { title: 'Audit Log', value: '/audit-log', icon: 'mdi-history' },
+  { title: 'Simulator', value: '/simulator', icon: 'mdi-play-network' },
   { title: 'Logout', value: '/logout', icon: 'mdi-logout' }
 ]);
 </script>

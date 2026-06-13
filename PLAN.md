@@ -19,9 +19,19 @@ The AwayBus dashboard is the control center. Station masters, transit authority 
 - Supabase Auth with route protection middleware
 - PWA-enabled with offline fallback page
 - SSR via Nuxt 3
-- Realtime subscription on dashboard for live demand counts
+- Realtime subscription on dashboard for live demand counts and driver tracking
+
+**What's new (Phase 14):**
+- **Audit logging** — all CRUD (INSERT/UPDATE/DELETE/VERIFY) logged to `audit_log` table via `useAuditLog` composable
+- **Driver Simulator** (`/simulator`) — simulate N drivers on routes, passenger check-in lifecycle
+- **City onboarding wizard** (`/cities/add`) — fixed Vuetify stepper, Nuxt server proxies, publish logic
+- **OSM Export** — "Export OSM" button on cities page, links to `osm-export` Edge Function
+- **AwayBus color palette** — teal `#008080` primary, yellow `#FFD700` secondary, dark/light theme
+- **Realtime tables** — `:realtime` prop on NativeDataTable; Drivers & Stops auto-refresh
 
 **Critical gaps (blocking production):**
+1. **RLS**: policies exist in migrations but not yet pushed to production.
+2. **Production deployment**: schema, dashboard, and APKs not yet deployed. |
 1. **RLS is effectively disabled** — all policies are `USING (true) WITH CHECK (true)`. Anyone with an anon key can read/write all tables, including driver phone numbers. This is a data breach waiting to happen.
 2. **Foreign keys point to legacy table** — `awayBusDrivers.busRoute` and `awayBusRiders.busRoute` reference `awayBusRoutes_old(id)`, not the active `awayBusRoutes(osm_id)`. Data integrity is broken.
 3. **Three orphaned route tables** — `awayBusRoutes_old`, `awayBusRoutes_old2`, `awayBusRoutes_old_jsonb_bus_stop`. No migration path, confusing to maintainers.
@@ -124,7 +134,7 @@ The AwayBus dashboard is the control center. Station masters, transit authority 
 - `v-data-table` doesn't work well on mobile. Add a card-based mobile view for stops/routes/drivers.
 - Detect viewport and switch between table and card layout.
 
-**Task 4.4: Audit log**
+**Task 4.4: Audit log** ✅ — COMPLETE. `composables/useAuditLog.ts` logs all CRUD (INSERT/UPDATE/DELETE/VERIFY) from NativeDataTable, staff.vue, and users.vue to the `audit_log` table. `/audit-log` page displays entries with search, table, and action filters.
 - Log all admin actions: who created/edited/deleted what and when.
 - New `audit_log` table: `id`, `staff_id`, `action`, `table_name`, `row_id`, `old_values` (JSONB), `new_values` (JSONB), `created_at`.
 - Add a read-only `/audit-log` page (admin only).
@@ -133,13 +143,13 @@ The AwayBus dashboard is the control center. Station masters, transit authority 
 
 > **Context:** AwayBus must be deployable in any city. The dashboard is where new cities are onboarded — from OSM data import to review to publishing. A non-technical station master should be able to add their city.
 
-**Task 5.1: City management page (`/cities`)**
+**Task 5.1: City management page (`/cities`)** ✅ — COMPLETE. Lists cities with stop/route counts, status badges. "Add City" button links to wizard. "Review" and "Export OSM" action buttons per city row.
 - New sidebar nav item: "Cities".
 - List all cities with: name, country, status (active/inactive/pending), stop count, route count, last import date.
 - Actions per city: Activate/Deactivate, Re-import OSM data, View on map, Delete.
 - "Add City" button opens the city onboarding wizard.
 
-**Task 5.2: City onboarding wizard**
+**Task 5.2: City onboarding wizard** ✅ — COMPLETE. 4-step wizard at `/cities/add`: City Info → Set Boundary (Leaflet map) → Import Data (OSM) → Publish. Fixed Vuetify 3.3.7 stepper API. Nuxt server proxies (`server/api/osm-import.post.ts`, `server/api/publish-city.post.ts`) forward to Supabase Edge Functions.
 - **Step 1 — City Info:** Name, country (searchable dropdown), region, country code.
 - **Step 2 — Define area:** Full-screen Leaflet map. Admin draws a rectangle (bounding box) or searches for a city name to auto-fit the OSM boundary.
   - Alternatively: enter an OSM relation ID for the city boundary (e.g., Accra's relation is `25504410`).
@@ -164,7 +174,7 @@ The AwayBus dashboard is the control center. Station masters, transit authority 
 - Driver table: shows which city each driver's route belongs to.
 - Import/export: scoped to the selected city.
 
-**Task 5.5: Import review workflow**
+**Task 5.5: Import review workflow** ✅ — COMPLETE. `/cities/:id/review` shows import history with approve/reject. Calls publish-city edge function. Basic version — map overlay and diff view deferred.
 - New page: `/cities/:id/review` — detailed review of pending imports.
 - Side-by-side diff view for incremental updates: "2 stops added, 1 route modified, 0 deleted."
 - Map overlay showing old vs new data.

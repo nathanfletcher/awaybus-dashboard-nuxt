@@ -58,22 +58,22 @@
 
                 <template v-slot:item.action="{ item }">
                   <v-chip
-                    :color="actionColor(item.action)"
+                    :color="actionColor(item.columns?.action)"
                     size="small"
-                    :text="item.action"
+                    :text="item.columns?.action"
                   ></v-chip>
                 </template>
 
                 <template v-slot:item.created_at="{ item }">
-                  {{ new Date(item.created_at).toLocaleString() }}
+                  {{ item.columns?.created_at ? new Date(item.columns.created_at).toLocaleString() : '—' }}
                 </template>
 
                 <template v-slot:item.old_values="{ item }">
-                  <v-tooltip v-if="item.old_values">
+                  <v-tooltip v-if="item.raw?.old_values">
                     <template v-slot:activator="{ props }">
                       <v-icon v-bind="props" size="small">mdi-eye</v-icon>
                     </template>
-                    <pre class="text-caption">{{ JSON.stringify(item.old_values, null, 2) }}</pre>
+                    <pre class="text-caption">{{ JSON.stringify(item.raw.old_values, null, 2) }}</pre>
                   </v-tooltip>
                   <span v-else class="text-grey">—</span>
                 </template>
@@ -83,7 +83,7 @@
                     <template v-slot:activator="{ props }">
                       <v-icon v-bind="props" size="small">mdi-eye</v-icon>
                     </template>
-                    <pre class="text-caption">{{ JSON.stringify(item.new_values, null, 2) }}</pre>
+                    <pre class="text-caption">{{ JSON.stringify(item.raw?.new_values, null, 2) }}</pre>
                   </v-tooltip>
                 </template>
               </v-data-table>
@@ -97,6 +97,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { VDataTable } from 'vuetify/labs/VDataTable'
 
 definePageMeta({ middleware: 'auth', layout: 'default' })
 

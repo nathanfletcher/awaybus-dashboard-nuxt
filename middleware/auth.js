@@ -1,43 +1,58 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
     const user = useSupabaseUser();
     const client = useSupabaseClient();
-    
-    // Allow public access to auth pages, redirect to home if already logged in
+
+    // Allow public access to auth pages
     const publicRoutes = ['/login', '/forgot-password', '/new-password'];
     if (publicRoutes.includes(to.path)) {
-        if (user.value) {
-            return navigateTo('/');
-        }
+        if (user.value) return navigateTo('/');
         return;
     }
 
-    // Protect all other routes
-    if (!user.value) {
-        return navigateTo('/login');
+    // Require authentication
+    if (!user.value) return navigateTo('/login');
+
+    // Fetch user role from awayBusStaff
+    let role = 'viewer'; // default: lowest permissions
+    try {
+        const { data } = await client
+            .from('awayBusStaff')
+            .select('role')
+            .eq('user_table_id', user.value.id)
+            .single();
+        if (data?.role) role = data.role;
+    } catch {
+        // Not a staff member — stay as viewer
     }
 
-    // Fetch user role from awayBusStaff (cached in session)
-    const { data: staffRecord } = await client
-        .from('awayBusStaff')
-        .select('role')
-        .eq('user_table_id', user.value.id)
-        .single();
+    // Role hierarchy:
+    // superadmin > admin > staff > viewer
+    const roleLevels = { superadmin: 4, admin: 3, staff: 2, viewer: 1 };
+    const userLevel = roleLevels[role] || 0;
 
-    const role = staffRecord?.role || 'staff';
+    // Route permission map — each route needs at least the specified role
+    const routePermissions = {
+        '/staff': 'superadmin',        // only superadmin can manage staff
+        '/audit-log': 'admin',          // admin+ can view audit log
+        '/drivers': 'staff',            // staff+ can manage drivers
+        '/users': 'staff',              // staff+ can manage riders
+        '/stops': 'staff',              // staff+ edit stops
+        '/routes': 'staff',             // staff+ edit routes
+        '/cities': 'admin',             // admin+ manage cities
+    };
 
-    // RBAC: restrict access based on role
-    const adminOnlyRoutes = ['/staff', '/audit-log'];
-    const staffRoutes = ['/stops', '/routes', '/drivers', '/users'];
-
-    if (adminOnlyRoutes.includes(to.path) && role !== 'admin') {
-        return navigateTo('/');
+    // Check route permission
+    for (const [path, requiredRole] of Object.entries(routePermissions)) {
+        if (to.path.startsWith(path)) {
+            const requiredLevel = roleLevels[requiredRole] || 0;
+            if (userLevel < requiredLevel) {
+                return navigateTo('/'); // redirect to dashboard
+            }
+            break;
+        }
     }
 
-    // Viewer can only view the dashboard overview
-    if (role === 'viewer' && !['/', '/stops', '/routes'].includes(to.path)) {
-        return navigateTo('/');
-    }
-
-    // Store role for use in components
+    // Store role for components
     useState('userRole', () => role);
-})
+    useState('userStaffId', () => user.value?.id);
+});

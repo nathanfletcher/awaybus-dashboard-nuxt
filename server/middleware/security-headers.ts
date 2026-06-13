@@ -13,10 +13,10 @@ export default defineEventHandler((event) => {
     'Content-Security-Policy': [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://ktcwtskfltmihgddyzbj.supabase.co",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
       "img-src 'self' data: https: blob:",
-      "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://ktcwtskfltmihgddyzbj.supabase.co wss://ktcwtskfltmihgddyzbj.supabase.co https://*.supabase.co wss://*.supabase.co",
+      "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
+      "connect-src 'self' https://ktcwtskfltmihgddyzbj.supabase.co wss://ktcwtskfltmihgddyzbj.supabase.co https://*.supabase.co wss://*.supabase.co http://127.0.0.1:* http://localhost:* ws://127.0.0.1:*",
       "frame-src 'self'",
       "object-src 'none'",
     ].join('; '),

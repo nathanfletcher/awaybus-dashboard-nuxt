@@ -13,7 +13,7 @@
         <v-col cols="12" md="6" lg="3">
           <v-card elevation="2" class="fill-height" color="primary" theme="dark">
             <v-card-text>
-              <div class="text-overline mb-1">Live Commuter Demand</div>
+              <div class="text-overline mb-1"><v-icon icon="mdi-account-group" size="14" class="mr-1"></v-icon>Live Commuter Demand</div>
               <div class="text-h2 font-weight-black mb-2">{{ totalDemand }}</div>
               <div class="text-caption">Total people currently waiting at stops</div>
             </v-card-text>
@@ -27,7 +27,7 @@
         <v-col cols="12" md="6" lg="3">
           <v-card elevation="2" class="fill-height" color="success" theme="dark">
             <v-card-text>
-              <div class="text-overline mb-1">Active Drivers</div>
+              <div class="text-overline mb-1"><v-icon icon="mdi-steering" size="14" class="mr-1"></v-icon>Active Drivers</div>
               <div class="text-h2 font-weight-black mb-2">{{ activeDrivers }} <span class="text-h5">/ {{ totalDrivers }}</span></div>
               <div class="text-caption">Drivers broadcasting location right now</div>
             </v-card-text>
@@ -41,7 +41,7 @@
         <v-col cols="12" md="6" lg="3">
           <v-card elevation="2" class="fill-height">
             <v-card-text>
-              <div class="text-overline mb-1 text-medium-emphasis">Mapped Routes</div>
+              <div class="text-overline mb-1 text-medium-emphasis"><v-icon icon="mdi-map-marker-path" size="14" class="mr-1"></v-icon>Mapped Routes</div>
               <div class="text-h2 font-weight-black text-primary mb-2">{{ totalRoutes }}</div>
               <div class="text-caption">Active trotro routes in the system</div>
             </v-card-text>
@@ -55,7 +55,7 @@
         <v-col cols="12" md="6" lg="3">
           <v-card elevation="2" class="fill-height" :color="pendingDrivers > 0 ? 'warning' : ''" :theme="pendingDrivers > 0 ? 'dark' : 'light'">
             <v-card-text>
-              <div class="text-overline mb-1">Pending Approvals</div>
+              <div class="text-overline mb-1"><v-icon icon="mdi-shield-alert" size="14" class="mr-1"></v-icon>Pending Approvals</div>
               <div class="text-h2 font-weight-black mb-2">{{ pendingDrivers }}</div>
               <div class="text-caption">Drivers waiting for verification</div>
             </v-card-text>

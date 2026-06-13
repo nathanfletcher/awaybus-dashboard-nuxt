@@ -13,23 +13,25 @@
                     <ErrorAlert v-if="authError" :error-msg="authError" @clearError="clearError" class="mb-4" />
 
                     <v-text-field 
-                        type="email" 
-                        label="Email address" 
                         v-model="email"
+                        label="Email address" 
                         prepend-inner-icon="mdi-email-outline"
                         variant="outlined"
                         color="primary"
-                        required
+                        density="comfortable"
+                        autofocus
+                        :rules="[v => !!v || 'Required']"
                     ></v-text-field>
 
                     <v-text-field 
-                        type="password" 
-                        label="Password"
                         v-model="password"
+                        label="Password"
+                        type="password"
                         prepend-inner-icon="mdi-lock-outline"
                         variant="outlined"
                         color="primary"
-                        required
+                        density="comfortable"
+                        :rules="[v => !!v || 'Required']"
                     ></v-text-field>
 
                     <v-btn 
@@ -54,7 +56,7 @@
 
 <script setup>
     definePageMeta({
-        layout: "auth",
+        layout: "default",
     });
     useHead({
         title: "Login | AwayBus Station Master",
@@ -64,7 +66,7 @@
     const authError = ref("");
     const email = ref("");
     const password = ref("");
-    const client = useSupabaseAuthClient();
+    const client = useSupabaseClient();
     const router = useRouter();
 
     watchEffect(async () => {
@@ -75,16 +77,21 @@
 
     const login = async () => {
         loading.value = true;
-        const { error } = await client.auth.signInWithPassword({
-            email: email.value,
-            password: password.value,
-        });
-        if (error) {
+        authError.value = "";
+        try {
+            const { data, error } = await client.auth.signInWithPassword({
+                email: email.value,
+                password: password.value,
+            });
+            if (error) {
+                authError.value = error.message || "Invalid login credentials";
+                loading.value = false;
+            } else if (data?.user) {
+                router.push("/");
+            }
+        } catch (e) {
+            authError.value = e.message || "Connection failed. Is Supabase running?";
             loading.value = false;
-            authError.value = "Invalid login credentials";
-            setTimeout(() => {
-                authError.value = "";
-            }, 5000);
         }
     };
 

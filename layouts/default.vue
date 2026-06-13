@@ -1,5 +1,6 @@
 <template>
   <v-app>
+    <template v-if="!isAuthPage">
     <v-navigation-drawer
       v-model="drawer"
       color="primary"
@@ -14,24 +15,17 @@
       <NavigationList/>
     </v-navigation-drawer>
 
-    <v-app-bar elevation="1" app color="surface">
+    </template>
+
+    <v-app-bar v-if="!isAuthPage" elevation="1" app color="surface">
       <v-app-bar-nav-icon variant="text" @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <v-app-bar-title class="font-weight-medium">Station Master</v-app-bar-title>
       <VitePwaManifest />
       <v-spacer></v-spacer>
-      <v-select
-        v-model="selectedCity"
-        :items="cityOptions"
-        label="City"
-        variant="outlined"
-        density="compact"
-        hide-details
-        style="max-width: 180px; margin-right: 8px;"
-        @update:model-value="onCityChange"
-      ></v-select>
+      <CitySelector />
       <GlobalSearch />
-      <v-btn icon="mdi-bell-outline" variant="text"></v-btn>
-      <v-btn icon="mdi-account-circle" variant="text"></v-btn>
+      <v-btn icon="mdi-refresh" variant="text" @click="refreshDashboard"></v-btn>
+      <v-btn icon="mdi-logout" variant="text" @click="handleLogout" title="Logout"></v-btn>
     </v-app-bar>
 
     <v-main class="bg-grey-lighten-4">
@@ -43,13 +37,30 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+
+const route = useRoute();
+const isAuthPage = computed(() => {
+  return ['/login', '/forgot-password', '/new-password'].includes(route.path);
+});
 
 const drawer = ref(true);
 const selectedCity = ref(null);
 const cityOptions = ref([]);
 
 const client = useSupabaseClient();
+
+const supabaseClient = useSupabaseClient();
+const router = useRouter();
+
+function refreshDashboard() {
+  window.location.reload();
+}
+
+async function handleLogout() {
+  await supabaseClient.auth.signOut();
+  router.push('/login');
+}
 
 onMounted(async () => {
   const { data } = await client.from('cities').select('id, name').eq('is_active', true).order('name');

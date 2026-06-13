@@ -4,6 +4,7 @@
             <NativeDataTable
             :supabase-table-name=table
             supabase-table-id="osm_id"
+            :realtime="true"
             >
             </NativeDataTable>
         

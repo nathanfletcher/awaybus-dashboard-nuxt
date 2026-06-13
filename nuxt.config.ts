@@ -14,7 +14,7 @@ export default defineNuxtConfig({
     manifest: {
       name: 'AwayBus Station Master',
       short_name: 'AwayBus',
-      theme_color: '#1976d2',
+      theme_color: '#008080',
       icons: [
         {
           src: 'favicon.ico',
@@ -39,13 +39,50 @@ export default defineNuxtConfig({
   },
   vuetify: {
     vuetifyOptions: {
-      // @vuetify/vite-plugin
+      theme: {
+        defaultTheme: 'light',
+        themes: {
+          light: {
+            dark: false,
+            colors: {
+              primary: '#008080',
+              secondary: '#FFD700',
+              error: '#D32F2F',
+              warning: '#F9A825',
+              info: '#0097A7',
+              success: '#008080',
+              background: '#FFFFFF',
+              surface: '#FFFFFF',
+              'on-surface': '#121212',
+              'on-primary': '#FFFFFF',
+              'on-secondary': '#121212',
+            }
+          },
+          dark: {
+            dark: true,
+            colors: {
+              primary: '#00B3B3',
+              secondary: '#FFD700',
+              error: '#EF5350',
+              warning: '#F9A825',
+              info: '#26C6DA',
+              success: '#00B3B3',
+              background: '#121212',
+              surface: '#1E1E1E',
+              'on-surface': '#FFFFFF',
+              'on-primary': '#FFFFFF',
+              'on-secondary': '#121212',
+            }
+          }
+        }
+      }
     },
     moduleOptions: {
       treeshaking: true,
       useIconCDN: true,
       styles: true,
       autoImport: true,
+      useVuetifyLabs: true,
     }
   },
   css: ['leaflet/dist/leaflet.css'],

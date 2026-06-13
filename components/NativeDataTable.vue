@@ -197,7 +197,7 @@
         <v-data-table
             v-model="selectedRows"
             :headers="computedHeaders"
-            :items="data"
+            :items="sanitizedData"
             :search="search"
             :loading="pending"
             :item-value="props.supabaseTableId"
@@ -216,8 +216,8 @@
             ]"
         >
             <template v-slot:item.actions="{ item }">
-                <v-btn v-if="props.supabaseTableName === 'awayBusDrivers' && !item.isVerified" 
-                    color="success" size="small" variant="tonal" @click.stop="verifyDriver(item)">Verify</v-btn>
+                <v-btn v-if="props.supabaseTableName === 'awayBusDrivers' && !item.raw?.isVerified" 
+                    color="success" size="small" variant="tonal" @click.stop="verifyDriver(item.raw)">Verify</v-btn>
                 
             </template>
         </v-data-table>
@@ -225,7 +225,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, toRaw, onMounted, shallowRef } from 'vue';
+import { ref, computed, watch, toRaw, onMounted, onBeforeUnmount, shallowRef } from 'vue';
 import { VDataTable } from 'vuetify/labs/VDataTable';
 
 const props = defineProps({
@@ -242,6 +242,11 @@ const props = defineProps({
         type: String,
         required: false,
         default: 'id'
+    },
+    realtime: {
+        type: Boolean,
+        required: false,
+        default: false
     }
 });
 
@@ -337,12 +342,49 @@ const refreshData = async () => {
     await refreshNuxtData();
 };
 
+// Realtime subscription — auto-refresh on DB changes when :realtime="true"
+let realtimeChannel = null;
+
+onMounted(() => {
+    if (props.realtime) {
+        realtimeChannel = client.channel(`realtime_${props.supabaseTableName}`)
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: props.supabaseTableName },
+                () => { refreshData(); }
+            )
+            .subscribe();
+    }
+});
+
+onBeforeUnmount(() => {
+    if (realtimeChannel) {
+        client.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+    }
+});
+
+// Column allowlists per table — only relevant columns are shown
+const tableColumnAllowlist = {
+    awayBusStops: ['Name', 'osm_id', 'coordinates', 'highway', 'no_of_people', 'city_id', 'shelter', 'bench', 'operator', 'public_transport'],
+    awayBusRoutes: ['name', 'osm_id', 'busStops', 'fare', 'operator', 'city_id'],
+    awayBusDrivers: ['name', 'carNumber', 'phoneNumber', 'busRoute', 'isOnline', 'isVerified', 'userId'],
+    awayBusRiders: null, // show all
+    awayBusStaff: null,
+};
+
 // Headers
 const computedHeaders = computed(() => {
     if (data.value && data.value.length > 0) {
-        const keys = Object.keys(toRaw(data.value[0]));
+        const allowed = tableColumnAllowlist[props.supabaseTableName];
+        let keys = Object.keys(toRaw(data.value[0]));
+        
+        // Filter to allowed columns if table has an allowlist
+        if (allowed) {
+            keys = keys.filter(k => allowed.includes(k));
+        }
+        
         const headers = keys.map(key => ({
-            title: key,
+            title: key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), // humanize column names
             key: key,
             align: 'start',
             sortable: true
@@ -351,6 +393,22 @@ const computedHeaders = computed(() => {
         return headers;
     }
     return [{ title: 'Actions', key: 'actions', align: 'end', sortable: false }];
+});
+
+// Sanitize data: replace null/undefined with "—", serialize objects
+const sanitizedData = computed(() => {
+    if (!data.value) return [];
+    return data.value.map(row => {
+        const sanitized = { ...row };
+        for (const key of Object.keys(sanitized)) {
+            if (sanitized[key] === null || sanitized[key] === undefined || sanitized[key] === 'null') {
+                sanitized[key] = '—';
+            } else if (typeof sanitized[key] === 'object') {
+                sanitized[key] = JSON.stringify(sanitized[key]).substring(0, 80);
+            }
+        }
+        return sanitized;
+    });
 });
 
 // Helper Functions
@@ -558,10 +616,12 @@ async function createSupabaseRow() {
     } else if (insertedData && insertedData.length > 0) {
         data.value = [...data.value, insertedData[0]];
         closeAddDialog();
+        await auditLog('INSERT', null, insertedData[0], props.supabaseTableName, insertedData[0][props.supabaseTableId]);
     }
 }
 
 async function editSupabaseRow() {
+    const oldRow = selectedRows.value.length === 1 ? { ...toRaw(selectedRows.value[0]) } : null;
     let payload = Object.assign({}, toRaw(tableObject.value));
     // Remove PK from payload — we use .eq() in the WHERE clause instead
     delete payload[props.supabaseTableId];
@@ -599,6 +659,7 @@ async function editSupabaseRow() {
             }
         }
         closeEditDialog();
+        await auditLog('UPDATE', oldRow, updatedData[0], props.supabaseTableName, updatedId);
     }
 }
 
@@ -619,6 +680,7 @@ async function deleteSupabaseRows() {
                 newData.splice(idx, 1);
                 data.value = newData;
             }
+            await auditLog('DELETE', toRaw(row), null, props.supabaseTableName, deletedId);
         }
     }
     showDeleteDialog.value = false;
@@ -627,6 +689,7 @@ async function deleteSupabaseRows() {
 
 // Custom Actions
 async function verifyDriver(driver) {
+    const oldVerified = driver.isVerified;
     const { data: updatedData, error } = await client
         .from('awayBusDrivers')
         .update({ isVerified: true })
@@ -640,6 +703,7 @@ async function verifyDriver(driver) {
             newData[idx].isVerified = true;
             data.value = newData;
         }
+        await auditLog('VERIFY', { isVerified: oldVerified }, { isVerified: true }, 'awayBusDrivers', driver.id);
     }
 }
 
@@ -747,7 +811,7 @@ function updateRouteMapNative() {
                     const lon = parseFloat(parts[0]);
                     if (!isNaN(lat) && !isNaN(lon)) {
                         latLngs.push([lat, lon]);
-                        let color = '#3b82f6'; // blue
+                        let color = '#008080'; // teal
                         if (index === 0) color = '#22c55e'; // green (start)
                         else if (index === currentRouteStops.value.length - 1) color = '#ef4444'; // red (end)
 
@@ -763,7 +827,7 @@ function updateRouteMapNative() {
         });
 
         if (latLngs.length > 1) {
-            routePolyline = L.polyline(latLngs, { color: '#3b82f6', weight: 4, opacity: 0.8 }).addTo(routeMapInstance);
+            routePolyline = L.polyline(latLngs, { color: '#008080', weight: 4, opacity: 0.8 }).addTo(routeMapInstance);
         }
         
         // Auto-fit bounds only if there are stops and we haven't done it yet this session

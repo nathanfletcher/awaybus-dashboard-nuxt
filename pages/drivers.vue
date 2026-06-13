@@ -3,6 +3,7 @@
         
             <NativeDataTable
             :supabase-table-name=table
+            :realtime="true"
             >
             </NativeDataTable>
         

@@ -15,16 +15,16 @@
             <v-card-text>
               <v-data-table :headers="headers" :items="imports" :loading="loading">
                 <template v-slot:item.import_status="{ item }">
-                  <v-chip :color="statusColor(item.import_status)" size="small">{{ item.import_status }}</v-chip>
+                  <v-chip :color="statusColor(item.columns?.import_status)" size="small">{{ item.columns?.import_status }}</v-chip>
                 </template>
                 <template v-slot:item.created_at="{ item }">
-                  {{ new Date(item.created_at).toLocaleString() }}
+                  {{ item.columns?.created_at ? new Date(item.columns.created_at).toLocaleString() : '—' }}
                 </template>
                 <template v-slot:item.actions="{ item }">
-                  <v-btn v-if="item.import_status === 'pending_review'" color="success" size="small" variant="tonal" @click="approve(item)" :loading="approving === item.id">
+                  <v-btn v-if="item.raw?.import_status === 'pending_review'" color="success" size="small" variant="tonal" @click="approve(item.raw)" :loading="approving === item.raw?.id">
                     Approve
                   </v-btn>
-                  <v-btn v-if="item.import_status === 'pending_review'" color="error" size="small" variant="tonal" class="ml-2" @click="reject(item)">
+                  <v-btn v-if="item.raw?.import_status === 'pending_review'" color="error" size="small" variant="tonal" class="ml-2" @click="reject(item.raw)">
                     Reject
                   </v-btn>
                 </template>
@@ -52,6 +52,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { VDataTable } from 'vuetify/labs/VDataTable'
 
 definePageMeta({ middleware: 'auth', layout: 'default' })
 
