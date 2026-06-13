@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "nuxt build",
+    "start": "node .output/server/index.mjs",
     "dev": "nuxt dev",
     "dev:local": "nuxt dev --dotenv .env.local",
     "generate": "nuxt generate",
