@@ -21,6 +21,9 @@ const items = ref([
   { title: 'Bus Routes', value: '/routes', icon: 'mdi-map-marker-path' },
   { title: 'Drivers', value: '/drivers', icon: 'mdi-steering' },
   { title: 'Users', value: '/users', icon: 'mdi-account-group' },
+  { title: 'Staff', value: '/staff', icon: 'mdi-shield-account' },
+  { title: 'Cities', value: '/cities', icon: 'mdi-city' },
+  { title: 'Audit Log', value: '/audit-log', icon: 'mdi-history' },
   { title: 'Logout', value: '/logout', icon: 'mdi-logout' }
 ]);
 </script>

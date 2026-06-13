@@ -54,7 +54,7 @@
     layout: 'auth'
   })
   useHead({
-    title: 'New Password | supaAuth'
+    title: 'New Password | AwayBus Station Master'
   })
   const password = ref('')
   const passwordConfirm = ref('')

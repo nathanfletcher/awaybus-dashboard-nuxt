@@ -50,7 +50,7 @@
     layout: 'auth'
   })
   useHead({
-    title: 'Forgot Password | supaAuth'
+    title: 'Forgot Password | AwayBus Station Master'
   })
   const email = ref('')
   const client = useSupabaseAuthClient()

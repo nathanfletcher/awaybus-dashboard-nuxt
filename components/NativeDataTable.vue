@@ -94,14 +94,15 @@
                                         <template v-for="jsonKey in Object.keys(tableObject)" :key="jsonKey">
                                             <v-text-field v-if="jsonKey===props.supabaseTableId"
                                                 v-model="tableObject[jsonKey]"
-                                                disabled
-                                                :label="jsonKey"
-                                                variant="outlined" density="compact" class="mb-2"
+                                                :label="`${jsonKey} (read-only)`"
+                                                variant="plain" density="compact" class="mb-2 text-caption text-disabled"
+                                                readonly
                                             ></v-text-field>
                                             <v-text-field v-else
                                                 v-model="tableObject[jsonKey]"
                                                 v-show="!(props.supabaseTableName === 'awayBusRoutes' && jsonKey === 'busStops')"
                                                 :label="jsonKey"
+                                                :rules="getValidationRules(jsonKey)"
                                                 @input="updateBusStopMapFromInput"
                                                 variant="outlined" density="compact" class="mb-2"
                                             ></v-text-field>
@@ -251,6 +252,27 @@ const tableObject = ref({});
 const tableObjectTemplate = ref({});
 
 const showAddDialog = ref(false);
+
+// Validation rules for edit form fields
+const COORDINATE_PATTERN = /^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/;
+
+function getValidationRules(jsonKey) {
+    const rules = [];
+    const key = jsonKey.toLowerCase();
+
+    // Required fields
+    const requiredFields = ['name', 'osm_id', 'coordinates', 'busroute', 'carnumber', 'phonenumber'];
+    if (requiredFields.includes(key)) {
+        rules.push((v) => (v !== null && v !== undefined && v !== '') || `${jsonKey} is required`);
+    }
+
+    // Coordinate validation
+    if (key === 'coordinates') {
+        rules.push((v) => COORDINATE_PATTERN.test(v) || 'Format: lat,lng (e.g. 5.6037,-0.1870)');
+    }
+
+    return rules;
+}
 const showEditDialog = ref(false);
 const showDeleteDialog = ref(false);
 const showRouteBuilder = ref(false);
@@ -298,7 +320,6 @@ const { data: asyncData, pending: asyncPending, error: fetchError, refresh: refr
 );
 
 watchEffect(() => {
-    console.log('watchEffect Triggered. Pending:', asyncPending.value, 'Data:', asyncData.value);
     if (asyncData.value) {
         data.value = asyncData.value;
         if (data.value.length > 0 && Object.keys(tableObjectTemplate.value).length === 0) {
@@ -353,10 +374,6 @@ function openEditDialog() {
             // }
         }
         tableObject.value = rowData;
-        console.log('--- OPEN EDIT DIALOG ---');
-        console.log('Row Data:', rowData);
-        console.log('busStops type:', typeof rowData.busStops);
-        console.log('busStops value:', rowData.busStops);
         showEditDialog.value = true;
         if (props.supabaseTableName === 'awayBusStops') {
             initBusStopMap('busStopEditMapNative', tableObject);
@@ -392,8 +409,6 @@ function openEditDialog() {
                 const cleanArray = Array.isArray(parsedStops) ? [...parsedStops].filter(Boolean).map(String) : [];
                 currentRouteStops.value = cleanArray;
                 tableObject.value.busStops = cleanArray; // OVERWRITE tableObject string so UI doesn't choke on a stringified object!
-                
-                console.log('Final parsed currentRouteStops:', currentRouteStops.value);
             } catch(e) {
                 console.error('Error parsing busStops:', e);
                 currentRouteStops.value = [];
@@ -548,6 +563,8 @@ async function createSupabaseRow() {
 
 async function editSupabaseRow() {
     let payload = Object.assign({}, toRaw(tableObject.value));
+    // Remove PK from payload — we use .eq() in the WHERE clause instead
+    delete payload[props.supabaseTableId];
     if (props.supabaseTableName === 'awayBusRoutes') payload.busStops = { stops: currentRouteStops.value };
     let finalPayload = {};
     for (let key in payload) {
@@ -561,7 +578,8 @@ async function editSupabaseRow() {
 
     const { data: updatedData, error } = await client
         .from(props.supabaseTableName)
-        .upsert(finalPayload)
+        .update(finalPayload)
+        .eq(props.supabaseTableId, tableObject.value[props.supabaseTableId])
         .select();
         
     if (error) {
