@@ -143,13 +143,13 @@ The AwayBus dashboard is the control center. Station masters, transit authority 
 
 > **Context:** AwayBus must be deployable in any city. The dashboard is where new cities are onboarded — from OSM data import to review to publishing. A non-technical station master should be able to add their city.
 
-**Task 5.1: City management page (`/cities`)** ✅ — COMPLETE. Lists cities with stop/route counts, status badges. "Add City" button links to wizard. "Review" and "Export OSM" action buttons per city row.
+**Task 5.1: City management page (`/cities`)** ✅ — COMPLETE. Lists cities with stop/route counts, status badges. "Add City" button links to wizard at `/add-city`. "Review" button links to import review at `/city-review/:id`. "Export OSM" action button per city row.
 - New sidebar nav item: "Cities".
 - List all cities with: name, country, status (active/inactive/pending), stop count, route count, last import date.
 - Actions per city: Activate/Deactivate, Re-import OSM data, View on map, Delete.
 - "Add City" button opens the city onboarding wizard.
 
-**Task 5.2: City onboarding wizard** ✅ — COMPLETE. 4-step wizard at `/cities/add`: City Info → Set Boundary (Leaflet map) → Import Data (OSM) → Publish. Fixed Vuetify 3.3.7 stepper API. Nuxt server proxies (`server/api/osm-import.post.ts`, `server/api/publish-city.post.ts`) forward to Supabase Edge Functions.
+**Task 5.2: City onboarding wizard** ✅ — COMPLETE. 4-step wizard at `/add-city` (moved from `/cities/add` to fix Nuxt parent-child route nesting — DASH-08). Back buttons now use outlined style with arrow icons for visibility. Step 2 auto-captures bounding box on map init (no click needed). Step 3 shows clear error messages when edge functions aren't running, with instructions to start `supabase functions serve`. Nuxt server proxies (`server/api/osm-import.post.ts`, `server/api/publish-city.post.ts`) forward to Supabase Edge Functions.
 - **Step 1 — City Info:** Name, country (searchable dropdown), region, country code.
 - **Step 2 — Define area:** Full-screen Leaflet map. Admin draws a rectangle (bounding box) or searches for a city name to auto-fit the OSM boundary.
   - Alternatively: enter an OSM relation ID for the city boundary (e.g., Accra's relation is `25504410`).
@@ -174,7 +174,7 @@ The AwayBus dashboard is the control center. Station masters, transit authority 
 - Driver table: shows which city each driver's route belongs to.
 - Import/export: scoped to the selected city.
 
-**Task 5.5: Import review workflow** ✅ — COMPLETE. `/cities/:id/review` shows import history with approve/reject. Calls publish-city edge function. Basic version — map overlay and diff view deferred.
+**Task 5.5: Import review workflow** ✅ — COMPLETE. `/city-review/:id` (moved from `/cities/:id/review` to fix Nuxt parent-child route nesting — DASH-09). Shows import history with approve/reject. Calls publish-city edge function. Basic version — map overlay and diff view deferred.
 - New page: `/cities/:id/review` — detailed review of pending imports.
 - Side-by-side diff view for incremental updates: "2 stops added, 1 route modified, 0 deleted."
 - Map overlay showing old vs new data.

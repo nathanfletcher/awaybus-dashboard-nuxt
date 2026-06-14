@@ -27,16 +27,24 @@
 
               <!-- Step 2: Bounding Box -->
               <div v-if="step === 2">
-                <p class="mb-2">Drag the map to set the city boundary. Click "Use Viewport" to capture the visible area.</p>
+                <v-alert color="info" variant="tonal" density="compact" class="mb-4" icon="mdi-information-outline">
+                  <strong>Zoom and pan</strong> the map to frame the city area. The bounding box coordinates update automatically — you don't need to click anything. When the city fits comfortably in the view, click <strong>"Next: Import"</strong>.
+                </v-alert>
+
                 <div id="cityMap" style="height: 400px; border: 1px solid #ccc; border-radius: 8px;"></div>
+
                 <v-row class="mt-2">
                   <v-col cols="3" v-for="(v, key) in form.bounds" :key="key">
                     <v-text-field :model-value="v?.toFixed(4)" :label="key" variant="outlined" density="compact" readonly hide-details></v-text-field>
                   </v-col>
                 </v-row>
+
+                <v-chip v-if="form.bounds" color="success" size="small" variant="tonal" class="mt-2" prepend-icon="mdi-check-circle">
+                  Bounds captured — {{ form.bounds.north?.toFixed(4) }}°N, {{ form.bounds.south?.toFixed(4) }}°S, {{ form.bounds.east?.toFixed(4) }}°E, {{ form.bounds.west?.toFixed(4) }}°W
+                </v-chip>
+
                 <div class="d-flex justify-end mt-4">
-                  <v-btn variant="text" @click="step = 1">Back</v-btn>
-                  <v-btn color="secondary" variant="outlined" class="ml-2" @click="captureViewport">Use Viewport</v-btn>
+                  <v-btn variant="outlined" color="grey-darken-1" prepend-icon="mdi-arrow-left" @click="step = 1">Back</v-btn>
                   <v-btn color="primary" class="ml-2" @click="step = 3" :disabled="!form.bounds">Next: Import</v-btn>
                 </div>
               </div>
@@ -53,7 +61,12 @@
                       Found {{ importResult.stops_imported }} bus stops in {{ form.name }}.
                     </template>
                     <template v-else>
-                      Import failed: {{ importResult.error }}
+                      <p class="font-weight-bold mb-2">Import failed</p>
+                      <p class="mb-2">{{ importResult.error }}</p>
+                      <div v-if="importResult.hint" class="text-caption mt-2" style="white-space: pre-line">
+                        <v-icon size="small" class="mr-1">mdi-lightbulb-outline</v-icon>
+                        {{ importResult.hint }}
+                      </div>
                     </template>
                   </v-alert>
                   <div v-if="importResult.stops_imported > 0" class="mb-4">
@@ -63,7 +76,7 @@
                   </div>
                 </div>
                 <div class="d-flex justify-end mt-4">
-                  <v-btn variant="text" @click="step = 2">Back</v-btn>
+                  <v-btn variant="outlined" color="grey-darken-1" prepend-icon="mdi-arrow-left" @click="step = 2">Back</v-btn>
                   <v-btn v-if="!importResult" color="primary" class="ml-2" @click="runImport" :loading="importing" :disabled="importing">Start Import</v-btn>
                   <v-btn v-else-if="importResult?.success" color="primary" class="ml-2" @click="step = 4">Next: Publish</v-btn>
                 </div>
@@ -95,7 +108,7 @@
                   </div>
                 </div>
                 <div class="text-left mt-4">
-                  <v-btn variant="text" @click="step = 3">Back</v-btn>
+                  <v-btn variant="outlined" color="grey-darken-1" prepend-icon="mdi-arrow-left" @click="step = 3">Back</v-btn>
                 </div>
               </div>
             </v-card-text>
@@ -122,7 +135,7 @@ let cityMap = null
 
 const steps = [
   'City Info — Enter the city name and location.',
-  'Set Boundary — Drag the map to define the city area.',
+  'Set Boundary — Zoom and pan the map to frame the city.',
   'Import Data — Fetch bus stops from OpenStreetMap.',
   'Publish — Make the city live in the system.',
 ]
@@ -134,43 +147,39 @@ const form = ref({
   bounds: null,
 })
 
-async function initMap() {
-  await nextTick()
-  const L = await import('leaflet')
-  
-  if (cityMap) cityMap.remove()
-  
-  // Default to Accra view
-  cityMap = L.map('cityMap').setView([5.6037, -0.1870], 12)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap',
-    maxZoom: 19,
-  }).addTo(cityMap)
-  
-  // Draw rectangle
-  const bounds = L.rectangle([[5.55, -0.35], [5.70, -0.10]], {
-    color: '#008080', weight: 2, fillOpacity: 0.1
-  }).addTo(cityMap)
-  
-  cityMap.on('moveend', () => {
-    const b = cityMap.getBounds()
-    form.value.bounds = {
-      north: b.getNorth(),
-      south: b.getSouth(),
-      east: b.getEast(),
-      west: b.getWest(),
-    }
-  })
-}
-
-function captureViewport() {
-  const b = cityMap.getBounds()
+function captureBounds(map) {
+  const b = map.getBounds()
   form.value.bounds = {
     north: b.getNorth(),
     south: b.getSouth(),
     east: b.getEast(),
     west: b.getWest(),
   }
+}
+
+async function initMap() {
+  await nextTick()
+  const L = await import('leaflet')
+
+  if (cityMap) cityMap.remove()
+
+  // Default to Accra view
+  cityMap = L.map('cityMap').setView([5.6037, -0.1870], 12)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 19,
+  }).addTo(cityMap)
+
+  // Draw draggable rectangle
+  const rect = L.rectangle([[5.55, -0.35], [5.70, -0.10]], {
+    color: '#008080', weight: 2, fillOpacity: 0.1
+  }).addTo(cityMap)
+
+  // Capture bounds immediately (don't wait for user to move the map)
+  captureBounds(cityMap)
+
+  // Auto-update on every pan/zoom
+  cityMap.on('moveend', () => captureBounds(cityMap))
 }
 
 async function runImport() {
@@ -183,16 +192,32 @@ async function runImport() {
         country: form.value.country,
         bounding_box: form.value.bounds,
       },
-    }).catch(() => null)
+    })
 
     if (response?.success) {
       importResult.value = response
-      step.value = 4
     } else {
-      importResult.value = { success: false, error: 'Import failed. Check Supabase Edge Function logs.' }
+      importResult.value = {
+        success: false,
+        error: response?.error || 'Import failed. Check Supabase Edge Function logs.',
+        hint: 'The OSM import edge function may not be running. From the AwayBusSupabase directory, run: supabase functions serve osm-import --no-verify-jwt',
+      }
     }
   } catch (e) {
-    importResult.value = { success: false, error: e.message }
+    const status = e?.statusCode || e?.response?.status
+    if (status === 503 || status === 502) {
+      importResult.value = {
+        success: false,
+        error: 'The OSM import service is not reachable.',
+        hint: 'Start the edge function locally:\ncd AwayBusSupabase && supabase functions serve osm-import --no-verify-jwt\n\nOr deploy to production:\nsupabase functions deploy osm-import',
+      }
+    } else {
+      importResult.value = {
+        success: false,
+        error: e?.message || e?.data?.message || 'Connection failed',
+        hint: 'Check that the Supabase project is running and the osm-import edge function is deployed.',
+      }
+    }
   }
   importing.value = false
 }
@@ -205,7 +230,7 @@ async function publishCity() {
       body: {
         city_id: importResult.value?.city_id,
       },
-    }).catch(() => null)
+    })
 
     if (response?.success) {
       publishResult.value = response

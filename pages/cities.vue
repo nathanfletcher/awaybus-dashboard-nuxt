@@ -13,9 +13,7 @@
           <v-card>
             <v-card-title class="d-flex align-center justify-space-between">
               <span>Active Cities</span>
-              <NuxtLink to="/cities/add">
-                <v-btn color="primary" prepend-icon="mdi-plus">Add City</v-btn>
-              </NuxtLink>
+              <v-btn color="primary" prepend-icon="mdi-plus" to="/add-city">Add City</v-btn>
             </v-card-title>
             <v-card-text>
               <v-data-table
@@ -38,7 +36,7 @@
                   {{ item.columns?.created_at ? new Date(item.columns.created_at).toLocaleDateString() : '—' }}
                 </template>
                 <template v-slot:item.actions="{ item }">
-                  <v-btn variant="text" size="small" color="primary" :to="`/cities/${item.raw?.id}/review`">Review</v-btn>
+                  <v-btn variant="text" size="small" color="primary" :to="`/city-review/${item.raw?.id}`">Review</v-btn>
                   <v-btn variant="text" size="small" color="secondary" :href="osmExportUrl(item.raw?.id)" target="_blank">Export OSM</v-btn>
                 </template>
               </v-data-table>

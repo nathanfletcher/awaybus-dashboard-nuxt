@@ -39,6 +39,8 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         '/stops': 'staff',              // staff+ edit stops
         '/routes': 'staff',             // staff+ edit routes
         '/cities': 'admin',             // admin+ manage cities
+        '/add-city': 'admin',           // admin+ can add new cities
+        '/city-review': 'admin',        // admin+ can review city imports
     };
 
     // Check route permission
