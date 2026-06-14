@@ -12,24 +12,8 @@
         <v-col cols="12">
           <v-card>
             <v-card-text>
-              <!-- Step progress indicator -->
-              <div class="d-flex align-center mb-6">
-                <template v-for="s in 4" :key="s">
-                  <v-avatar
-                    :color="step >= s ? 'primary' : 'grey-lighten-2'"
-                    size="32"
-                  ><span :class="step >= s ? 'text-white' : 'text-grey'">{{ step > s ? '✓' : s }}</span></v-avatar>
-                  <v-divider v-if="s < 4" class="flex-grow-1 mx-2" :color="step > s ? 'primary' : ''"></v-divider>
-                </template>
-              </div>
-              <div class="d-flex justify-space-between mb-6 text-caption text-medium-emphasis">
-                <span :class="step >= 1 ? 'text-primary font-weight-bold' : ''">City Info</span>
-                <span :class="step >= 2 ? 'text-primary font-weight-bold' : ''">Set Boundary</span>
-                <span :class="step >= 3 ? 'text-primary font-weight-bold' : ''">Import Data</span>
-                <span :class="step >= 4 ? 'text-primary font-weight-bold' : ''">Publish</span>
-              </div>
-
-              <v-divider class="mb-6"></v-divider>
+              <p class="text-overline text-primary mb-1">Step {{ step }} of 4</p>
+              <p class="text-h6 font-weight-medium mb-6">{{ steps[step - 1] }}</p>
 
               <!-- Step 1: City Info -->
               <div v-if="step === 1">
@@ -135,6 +119,13 @@ const importResult = ref(null)
 const publishResult = ref(null)
 
 let cityMap = null
+
+const steps = [
+  'City Info — Enter the city name and location.',
+  'Set Boundary — Drag the map to define the city area.',
+  'Import Data — Fetch bus stops from OpenStreetMap.',
+  'Publish — Make the city live in the system.',
+]
 
 const form = ref({
   name: '',
