@@ -16,7 +16,7 @@ export default defineEventHandler((event) => {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
       "img-src 'self' data: https: blob:",
       "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
-      "connect-src 'self' https://ktcwtskfltmihgddyzbj.supabase.co wss://ktcwtskfltmihgddyzbj.supabase.co https://*.supabase.co wss://*.supabase.co http://127.0.0.1:* http://localhost:* ws://127.0.0.1:*",
+      "connect-src 'self' https://ktcwtskfltmihgddyzbj.supabase.co wss://ktcwtskfltmihgddyzbj.supabase.co https://*.supabase.co wss://*.supabase.co http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* https://cdn.jsdelivr.net",
       "frame-src 'self'",
       "object-src 'none'",
     ].join('; '),

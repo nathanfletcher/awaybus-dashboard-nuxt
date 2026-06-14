@@ -13,7 +13,7 @@
           <v-card>
             <v-card-title class="d-flex align-center justify-space-between">
               <span>Active Cities</span>
-              <v-btn color="primary" prepend-icon="mdi-plus" to="/cities/add">Add City</v-btn>
+              <v-btn color="primary" prepend-icon="mdi-plus" @click="navigateTo('/cities/add')">Add City</v-btn>
             </v-card-title>
             <v-card-text>
               <v-data-table
