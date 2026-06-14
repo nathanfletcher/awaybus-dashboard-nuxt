@@ -56,7 +56,7 @@ export function useSimulator() {
 
       try {
         await client.from('awayBusDrivers').update({
-          coordinates: `${stop.lng},${stop.lat}`,
+          coordinates: `${stop.lat},${stop.lng}`,
           currentBusStop: String(stop.id),
           isOnline: true,
           isMoving: true,
@@ -269,7 +269,7 @@ export function useSimulator() {
         isOnline: true,
         isMoving: true,
         busRoute: String(route.osm_id),
-        coordinates: stops.length > 0 ? `${stops[0].lng},${stops[0].lat}` : null,
+        coordinates: stops.length > 0 ? `${stops[0].lat},${stops[0].lng}` : null,
         lastActive: new Date().toISOString(),
       }).eq('id', driver.id)
 

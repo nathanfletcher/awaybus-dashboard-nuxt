@@ -262,11 +262,28 @@ async function initDriverMap() {
     maxZoom: 19,
   }).addTo(driverMap);
 
-  // Fetch online drivers and plot them
+  await updateDriverMarkers(L);
+
+  // Realtime: update markers on driver changes
+  client.channel('public:awayBusDrivers')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'awayBusDrivers' }, async () => {
+      await updateDriverMarkers(L);
+    })
+    .subscribe();
+}
+
+async function updateDriverMarkers(L) {
+  if (!L) return;
+  // Remove old markers
+  driverMarkers.forEach(m => { try { driverMap.removeLayer(m) } catch (_) {} });
+  driverMarkers = [];
+
   const { data: drivers } = await client
     .from('awayBusDrivers')
     .select('name, coordinates, carNumber, currentBusStop, isOnline')
     .eq('isOnline', true);
+
+  if (!drivers || !driverMap) return;
 
   const greenIcon = L.icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
@@ -276,41 +293,18 @@ async function initDriverMap() {
     popupAnchor: [1, -34],
   });
 
-  const amberIcon = L.icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-  });
-
-  if (drivers) {
-    drivers.forEach(driver => {
-      const coords = driver.coordinates?.split(',');
-      if (coords && coords.length === 2) {
-        const lat = parseFloat(coords[0]);
-        const lng = parseFloat(coords[1]);
-        if (!isNaN(lat) && !isNaN(lng)) {
-          const marker = L.marker([lat, lng], {
-            icon: driver.isOnline ? greenIcon : amberIcon,
-          }).addTo(driverMap);
-          marker.bindPopup(`
-            <strong>${driver.name || 'Unknown'}</strong><br/>
-            Car: ${driver.carNumber || 'N/A'}<br/>
-            Status: ${driver.isOnline ? 'Active' : 'Idle'}
-          `);
-          driverMarkers.push(marker);
-        }
+  for (const driver of drivers) {
+    const coords = driver.coordinates?.split(',');
+    if (coords && coords.length === 2) {
+      const lat = parseFloat(coords[0]);
+      const lng = parseFloat(coords[1]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        const marker = L.marker([lat, lng], { icon: greenIcon })
+          .bindPopup(`<strong>${driver.name || 'Unknown'}</strong><br/>Car: ${driver.carNumber || 'N/A'}<br/>Status: Active`)
+          .addTo(driverMap);
+        driverMarkers.push(marker);
       }
-    });
+    }
   }
-
-  // Realtime: listen for driver location updates
-  client.channel('public:awayBusDrivers')
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'awayBusDrivers' }, async () => {
-      driverMarkers.forEach(m => m.remove());
-      driverMarkers = [];
-      await initDriverMap();
-    })
-    .subscribe();
 }
 </script>
