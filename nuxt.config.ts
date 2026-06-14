@@ -25,14 +25,15 @@ export default defineNuxtConfig({
     },
     workbox: {
       navigateFallback: '/',
-      globPatterns: ['**/*.{js,css,html,png,svg,ico}']
+      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+      navigateFallbackAllowlist: [/^\/(login|forgot-password|new-password|cities|staff|audit-log|drivers|users|stops|routes|simulator)?$/],
     },
     client: {
       installPrompt: true,
       periodicSyncForUpdates: 3600
     },
     devOptions: {
-      enabled: true,
+      enabled: false,
       suppressWarnings: true,
       navigateFallbackAllowlist: [/^\/$/]
     }
