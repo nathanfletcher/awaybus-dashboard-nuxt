@@ -14,7 +14,7 @@
             <v-card-text>
               <v-data-table
                 :headers="headers"
-                :items="logs"
+                :items="filteredLogs"
                 :loading="loading"
                 :search="search"
                 :sort-by="[{ key: 'created_at', order: 'desc' }]"
@@ -46,7 +46,7 @@
                       <v-select
                         v-model="filterAction"
                         label="Filter by action"
-                        :items="['INSERT', 'UPDATE', 'DELETE']"
+                        :items="['INSERT', 'UPDATE', 'DELETE', 'VERIFY']"
                         variant="outlined"
                         density="compact"
                         hide-details

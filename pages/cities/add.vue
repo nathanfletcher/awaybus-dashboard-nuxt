@@ -12,103 +12,108 @@
         <v-col cols="12">
           <v-card>
             <v-card-text>
-              <v-stepper v-model="step">
-                <v-stepper-header>
-                  <v-stepper-step :complete="step > 1" step="1">City Info</v-stepper-step>
-                  <v-divider></v-divider>
-                  <v-stepper-step :complete="step > 2" step="2">Set Boundary</v-stepper-step>
-                  <v-divider></v-divider>
-                  <v-stepper-step :complete="step > 3" step="3">Import Data</v-stepper-step>
-                  <v-divider></v-divider>
-                  <v-stepper-step step="4">Publish</v-stepper-step>
-                </v-stepper-header>
+              <!-- Step progress indicator -->
+              <div class="d-flex align-center mb-6">
+                <template v-for="s in 4" :key="s">
+                  <v-avatar
+                    :color="step >= s ? 'primary' : 'grey-lighten-2'"
+                    size="32"
+                  ><span :class="step >= s ? 'text-white' : 'text-grey'">{{ step > s ? '✓' : s }}</span></v-avatar>
+                  <v-divider v-if="s < 4" class="flex-grow-1 mx-2" :color="step > s ? 'primary' : ''"></v-divider>
+                </template>
+              </div>
+              <div class="d-flex justify-space-between mb-6 text-caption text-medium-emphasis">
+                <span :class="step >= 1 ? 'text-primary font-weight-bold' : ''">City Info</span>
+                <span :class="step >= 2 ? 'text-primary font-weight-bold' : ''">Set Boundary</span>
+                <span :class="step >= 3 ? 'text-primary font-weight-bold' : ''">Import Data</span>
+                <span :class="step >= 4 ? 'text-primary font-weight-bold' : ''">Publish</span>
+              </div>
 
-                <v-stepper-items>
-                  <!-- Step 1: City Info -->
-                  <v-stepper-content step="1">
-                    <v-text-field v-model="form.name" label="City Name" variant="outlined" density="compact" :rules="[v => !!v || 'Required']"></v-text-field>
-                    <v-text-field v-model="form.country" label="Country" variant="outlined" density="compact" :rules="[v => !!v || 'Required']"></v-text-field>
-                    <v-text-field v-model="form.region" label="Region/State" variant="outlined" density="compact"></v-text-field>
-                    <div class="text-right mt-4">
-                      <v-btn color="primary" @click="step = 2" :disabled="!form.name || !form.country">Next: Draw Bounds</v-btn>
-                    </div>
-                  </v-stepper-content>
+              <v-divider class="mb-6"></v-divider>
 
-                  <!-- Step 2: Bounding Box -->
-                  <v-stepper-content step="2">
-                    <p class="mb-2">Drag the map to set the city boundary. Click "Use Viewport" to capture the visible area.</p>
-                    <div id="cityMap" style="height: 400px; border: 1px solid #ccc; border-radius: 8px;"></div>
-                    <v-row class="mt-2">
-                      <v-col cols="3" v-for="(v, key) in form.bounds" :key="key">
-                        <v-text-field :model-value="v?.toFixed(4)" :label="key" variant="outlined" density="compact" readonly hide-details></v-text-field>
-                      </v-col>
-                    </v-row>
-                    <div class="d-flex justify-end mt-4">
-                      <v-btn variant="text" @click="step = 1">Back</v-btn>
-                      <v-btn color="secondary" variant="outlined" class="ml-2" @click="captureViewport">Use Viewport</v-btn>
-                      <v-btn color="primary" class="ml-2" @click="step = 3" :disabled="!form.bounds">Next: Import</v-btn>
-                    </div>
-                  </v-stepper-content>
+              <!-- Step 1: City Info -->
+              <div v-if="step === 1">
+                <v-text-field v-model="form.name" label="City Name" variant="outlined" density="compact" :rules="[v => !!v || 'Required']"></v-text-field>
+                <v-text-field v-model="form.country" label="Country" variant="outlined" density="compact" :rules="[v => !!v || 'Required']"></v-text-field>
+                <v-text-field v-model="form.region" label="Region/State" variant="outlined" density="compact"></v-text-field>
+                <div class="text-right mt-4">
+                  <v-btn color="primary" @click="step = 2" :disabled="!form.name || !form.country">Next: Draw Bounds</v-btn>
+                </div>
+              </div>
 
-                  <!-- Step 3: Import Preview -->
-                  <v-stepper-content step="3">
-                    <div v-if="importing" class="text-center py-8">
-                      <v-progress-circular indeterminate size="64" color="primary"></v-progress-circular>
-                      <p class="mt-4">Querying OpenStreetMap for {{ form.name }}...</p>
-                    </div>
-                    <div v-else-if="importResult">
-                      <v-alert :type="importResult.success ? 'success' : 'error'" variant="tonal" class="mb-4">
-                        <template v-if="importResult.success">
-                          Found {{ importResult.stops_imported }} bus stops in {{ form.name }}.
-                        </template>
-                        <template v-else>
-                          Import failed: {{ importResult.error }}
-                        </template>
-                      </v-alert>
-                      <div v-if="importResult.stops_imported > 0" class="mb-4">
-                        <p><strong>Bus Stops:</strong> {{ importResult.stops_imported }}</p>
-                        <p><strong>Routes:</strong> {{ importResult.routes_imported || 0 }}</p>
-                        <p class="text-caption"><strong>Import ID:</strong> {{ importResult.import_id }}</p>
-                      </div>
-                    </div>
-                    <div class="d-flex justify-end mt-4">
-                      <v-btn variant="text" @click="step = 2">Back</v-btn>
-                      <v-btn v-if="!importResult" color="primary" class="ml-2" @click="runImport" :loading="importing" :disabled="importing">Start Import</v-btn>
-                      <v-btn v-else-if="importResult?.success" color="primary" class="ml-2" @click="step = 4">Next: Publish</v-btn>
-                    </div>
-                  </v-stepper-content>
+              <!-- Step 2: Bounding Box -->
+              <div v-if="step === 2">
+                <p class="mb-2">Drag the map to set the city boundary. Click "Use Viewport" to capture the visible area.</p>
+                <div id="cityMap" style="height: 400px; border: 1px solid #ccc; border-radius: 8px;"></div>
+                <v-row class="mt-2">
+                  <v-col cols="3" v-for="(v, key) in form.bounds" :key="key">
+                    <v-text-field :model-value="v?.toFixed(4)" :label="key" variant="outlined" density="compact" readonly hide-details></v-text-field>
+                  </v-col>
+                </v-row>
+                <div class="d-flex justify-end mt-4">
+                  <v-btn variant="text" @click="step = 1">Back</v-btn>
+                  <v-btn color="secondary" variant="outlined" class="ml-2" @click="captureViewport">Use Viewport</v-btn>
+                  <v-btn color="primary" class="ml-2" @click="step = 3" :disabled="!form.bounds">Next: Import</v-btn>
+                </div>
+              </div>
 
-                  <!-- Step 4: Publish -->
-                  <v-stepper-content step="4">
-                    <div v-if="publishing" class="text-center py-8">
-                      <v-progress-circular indeterminate size="64" color="success"></v-progress-circular>
-                      <p class="mt-4">Publishing {{ form.name }}...</p>
-                    </div>
-                    <div v-else-if="publishResult">
-                      <v-alert :type="publishResult?.success ? 'success' : 'error'" variant="tonal" class="mb-4">
-                        <template v-if="publishResult?.success">
-                          {{ form.name }} is now live with {{ importResult?.stops_imported || 0 }} stops!
-                        </template>
-                        <template v-else>
-                          Publish failed: {{ publishResult?.error }}
-                        </template>
-                      </v-alert>
-                      <div v-if="publishResult?.success" class="text-center">
-                        <v-btn color="primary" to="/cities">Go to Cities</v-btn>
-                      </div>
-                    </div>
-                    <div v-else>
-                      <p class="mb-4">Ready to publish. This will activate the city and make its stops and routes live.</p>
-                      <div class="text-center">
-                        <v-btn color="success" size="large" @click="publishCity" :loading="publishing">Publish {{ form.name }}</v-btn>
-                      </div>
-                    </div>
-                    <div class="text-left mt-4">
-                      <v-btn variant="text" @click="step = 3">Back</v-btn>
-                    </div>
-                  </v-stepper-content>
-                </v-stepper-items>
-              </v-stepper>
+              <!-- Step 3: Import Preview -->
+              <div v-if="step === 3">
+                <div v-if="importing" class="text-center py-8">
+                  <v-progress-circular indeterminate size="64" color="primary"></v-progress-circular>
+                  <p class="mt-4">Querying OpenStreetMap for {{ form.name }}...</p>
+                </div>
+                <div v-else-if="importResult">
+                  <v-alert :type="importResult.success ? 'success' : 'error'" variant="tonal" class="mb-4">
+                    <template v-if="importResult.success">
+                      Found {{ importResult.stops_imported }} bus stops in {{ form.name }}.
+                    </template>
+                    <template v-else>
+                      Import failed: {{ importResult.error }}
+                    </template>
+                  </v-alert>
+                  <div v-if="importResult.stops_imported > 0" class="mb-4">
+                    <p><strong>Bus Stops:</strong> {{ importResult.stops_imported }}</p>
+                    <p><strong>Routes:</strong> {{ importResult.routes_imported || 0 }}</p>
+                    <p class="text-caption"><strong>Import ID:</strong> {{ importResult.import_id }}</p>
+                  </div>
+                </div>
+                <div class="d-flex justify-end mt-4">
+                  <v-btn variant="text" @click="step = 2">Back</v-btn>
+                  <v-btn v-if="!importResult" color="primary" class="ml-2" @click="runImport" :loading="importing" :disabled="importing">Start Import</v-btn>
+                  <v-btn v-else-if="importResult?.success" color="primary" class="ml-2" @click="step = 4">Next: Publish</v-btn>
+                </div>
+              </div>
+
+              <!-- Step 4: Publish -->
+              <div v-if="step === 4">
+                <div v-if="publishing" class="text-center py-8">
+                  <v-progress-circular indeterminate size="64" color="success"></v-progress-circular>
+                  <p class="mt-4">Publishing {{ form.name }}...</p>
+                </div>
+                <div v-else-if="publishResult">
+                  <v-alert :type="publishResult?.success ? 'success' : 'error'" variant="tonal" class="mb-4">
+                    <template v-if="publishResult?.success">
+                      {{ form.name }} is now live with {{ importResult?.stops_imported || 0 }} stops!
+                    </template>
+                    <template v-else>
+                      Publish failed: {{ publishResult?.error }}
+                    </template>
+                  </v-alert>
+                  <div v-if="publishResult?.success" class="text-center">
+                    <v-btn color="primary" to="/cities">Go to Cities</v-btn>
+                  </div>
+                </div>
+                <div v-else>
+                  <p class="mb-4">Ready to publish. This will activate the city and make its stops and routes live.</p>
+                  <div class="text-center">
+                    <v-btn color="success" size="large" @click="publishCity" :loading="publishing">Publish {{ form.name }}</v-btn>
+                  </div>
+                </div>
+                <div class="text-left mt-4">
+                  <v-btn variant="text" @click="step = 3">Back</v-btn>
+                </div>
+              </div>
             </v-card-text>
           </v-card>
         </v-col>

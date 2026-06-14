@@ -281,7 +281,7 @@ async function updateDriverMarkers(L) {
   const { data: drivers } = await client
     .from('awayBusDrivers')
     .select('name, coordinates, carNumber, currentBusStop, isOnline')
-    .eq('isOnline', true);
+    .gte('lastActive', new Date(Date.now() - 2 * 60 * 1000).toISOString());
 
   if (!drivers || !driverMap) return;
 

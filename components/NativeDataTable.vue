@@ -215,6 +215,14 @@
                 { value: 500, title: '500' }
             ]"
         >
+            <template v-slot:item.isOnline="{ item }">
+                <v-chip v-if="props.supabaseTableName === 'awayBusDrivers'"
+                    :color="item.columns?.isOnline ? 'success' : 'grey'"
+                    size="small" variant="tonal">
+                    {{ item.columns?.isOnline ? 'Online' : 'Offline' }}
+                </v-chip>
+                <span v-else>{{ item.columns?.isOnline !== undefined ? item.columns.isOnline : '—' }}</span>
+            </template>
             <template v-slot:item.actions="{ item }">
                 <v-btn v-if="props.supabaseTableName === 'awayBusDrivers' && !item.raw?.isVerified" 
                     color="success" size="small" variant="tonal" @click.stop="verifyDriver(item.raw)">Verify</v-btn>
